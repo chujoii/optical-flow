@@ -1,0 +1,37 @@
+# Ignore all
+*
+# Unignore all with extensions
+!*.*
+# Unignore all dirs
+!*/
+
+.*
+*~
+*.eps
+*-eps-converted-to.pdf
+*.aux
+*.idx
+*.log
+*.out
+*.pdf
+*.toc
+*.sty
+*.cls
+*.bst
+*.clo
+*.nlo
+*shot*.jpg
+*shot*.png
+pixel_projection_on_the_horizontal.tex
+pixel_transverse_projection_on_the_horizontal.tex
+*.texe
+*.docx
+*.cfg
+*.o
+*.quoted
+test*
+latex/
+html/
+revision.txt
+!.gitignore
+!*.example
