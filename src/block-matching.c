@@ -32,12 +32,7 @@ History:
 Code:
 */
 
-#include "../../../ABMI.00232/src/speckled-band.h"
-#include "../../../ABMI.00232/src/image.h"
-#include "../../../ABMI.00232/src/capture.h"
-#include "../../../ABMI.00232/src/lookout.h"
-#include "../../../ABMI.00232/src/gui.h"
-#include "../../../ABMI.00232/src/util.h"
+#include "capture.h"
 
 /**
    block_size = 8 (for example)
@@ -78,6 +73,7 @@ unsigned long int diff_block (coord_2Du old, coord_2Du new, int block_size)
 	unsigned long int sum = 0;
 	unsigned long int counter = 0;
 
+	// fixme: add simultaneous rotation and translation
 	coord_2Du coord_2d_old;
 	coord_2Du coord_2d_new;
 	unsigned long int coord_raw_old;
@@ -89,11 +85,11 @@ unsigned long int diff_block (coord_2Du old, coord_2Du new, int block_size)
 	int shift_x = new.x - old.x;
 	int shift_y = new.y - old.y;
 
-	for (nx = 0; nx < block_size; nx++) { // new image
+	for (nx = 0; nx < block_size; nx++) {
 		ox = nx - shift_x;
 		coord_2d_old.x = old.x + ox;
 		coord_2d_new.x = new.x + nx;
-		for (ny = 0; ny < block_size; ny++) { // new image
+		for (ny = 0; ny < block_size; ny++) {
 			oy = ny - shift_y;
 			coord_2d_old.y = old.y + oy;
 			coord_2d_new.y = new.y + ny;

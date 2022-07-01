@@ -34,19 +34,8 @@ Code:
 
 #include <stdio.h>
 
-#include "../../../ABMI.00232/src/const.h"
 #include "block-matching.h"
 
-
-int verbose = VERBOSE_NO;
-int escape_status = false;
-int status_coord_of_robot = false;
-int mouse_state = NO_POINT_SET;
-int glob_filter_type = MEDIAN;
-
-struct imgRawImage* raw_image;
-struct imgRawImage* gui_image;
-struct imgRawImage* old_image;
 
 int main (int argc, char **argv)
 {

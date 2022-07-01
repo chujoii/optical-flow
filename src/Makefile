@@ -34,7 +34,7 @@ ifneq ($(filter armv7l,$(UNAME)),)
 	CFLAGS += -march=armv7-a -mfpu=vfpv3-d16 -mfloat-abi=hard
 endif
 
-all: unit_testing
+all: optical_flow unit_testing
 
 
 HEADERS = *.h
@@ -43,17 +43,24 @@ HEADERS = *.h
 %.o: %.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $<
 
-# ln -s ABMI.00242 directed-graph
-UNIT_TESTING_SRC=unit-testing.o ../../../ABMI.00232/src/capture.o ../../../ABMI.00232/src/image.o ../../../ABMI.00232/src/speckled-band.o ../../../ABMI.00232/src/lookout.o ../../../ABMI.00232/src/gui.o ../../../ABMI.00232/src/util.o
+# quotate all GLSL files
+glsl :
+	./quotate-glsl.sh
+
+OPTICAL_FLOW_SRC=main.o capture.o image.o gui.o
+optical_flow : glsl $(OPTICAL_FLOW_SRC)
+	$(CC) $(CFLAGS) $(OPTICAL_FLOW_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
+
+UNIT_TESTING_SRC=unit-testing.o
 unit_testing : $(UNIT_TESTING_SRC)
 	$(CC) $(CFLAGS) $(UNIT_TESTING_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
 
 debug :
 	# Cppcheck for a static code analysis
-	cppcheck --enable=all --inconclusive --std=posix main.c capture.c image.c gui.c speckled-band.c util.c wavelet.c B-splines.c lookout.c net-sock.c ../../ABMI.00238/src/cw.[ch] ../../ABMI.00242/src/directed-graph.[ch] *.h
+	cppcheck --enable=all --inconclusive --std=posix main.c capture.c image.c gui.c util.c *.h
 	# Valgrind for memory debugging, memory leak detection, and profiling
 	rm -f valgrind.log
-	valgrind --tool=memcheck --leak-check=yes --track-origins=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./abmi_00232 -f w -z -d 'rtsp://admin:qwerty123@192.168.100.101/Streaming/channels/101' -c 1590,598-1536,643-50 -b 1200,400 -v 2
+	valgrind --tool=memcheck --leak-check=yes --track-origins=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./optical_flow -f w -z -d '/dev/video0' -c 1590,598-1536,643-50 -b 1200,400 -v 2
 
 # doxygen
 doc :
@@ -67,4 +74,4 @@ doc :
 
 # clean directory
 clean :
-	rm *.o unit-testing
+	rm *.o optical_flow unit_testing
