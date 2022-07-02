@@ -239,17 +239,17 @@ int storeJpegImageFile(struct imgRawImage* lpImage, char* lpFilename) {
 
 
 
-void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned int video_texture)
+void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned int video_texture, int num_components)
 {
 	extern struct imgRawImage* raw_image; // fixme: global variable
 	extern struct imgRawImage* gui_image; // fixme: global variable
 	extern struct imgRawImage* old_image; // fixme: global variable
 
 	raw_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
-	raw_image->numComponents = NUM_COMPONENTS;
+	raw_image->numComponents = num_components;
 	raw_image->width = pFrameRGB->width;
 	raw_image->height = pFrameRGB->height;
-	raw_image->dwBufferBytes = pFrameRGB->width * pFrameRGB->height * NUM_COMPONENTS;
+	raw_image->dwBufferBytes = pFrameRGB->width * pFrameRGB->height * num_components;
 	raw_image->lpData = (unsigned char*)malloc(sizeof(unsigned char) * (raw_image->dwBufferBytes));
 
 	// memcpy not work because uint8_t != unsigned char:
@@ -311,17 +311,17 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 	fflush(stdout);
 }
 
-unsigned long int coord_to_raw_chunk(int image_width, struct coord_2Du coord)
+unsigned long int coord_to_raw_chunk(int image_width, int num_components, struct coord_2Du coord)
 {
-	return (coord.y * image_width + coord.x) * NUM_COMPONENTS;
+	return (coord.y * image_width + coord.x) * num_components;
 }
 
-struct coord_2Du raw_chunk_to_coord(int image_width, unsigned long int r)
+struct coord_2Du raw_chunk_to_coord(int image_width, int num_components, unsigned long int r)
 {
 	struct coord_2Du c;
-	unsigned long int wn = image_width * NUM_COMPONENTS; // fixme: wn==constant and need to calculate only once
+	unsigned long int wn = image_width * num_components; // fixme: wn==constant and need to calculate only once
 	c.y = r / wn;
 	//c.x = (r % wn) / image->numComponents;
-	c.x = (r - c.y * wn) / NUM_COMPONENTS;
+	c.x = (r - c.y * wn) / num_components;
 	return c;
 }

@@ -255,6 +255,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 
 
 	AVFrame *pFrameRGB = av_frame_alloc();
+	int num_components = NUM_COMPONENTS_RGB; // fixme: can ffmpeg decode monochrome video (-pix_fmt gray)?
 
 	//int num_bytes = avpicture_get_size(AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height); //https://stackoverflow.com/questions/12831761/how-to-resize-a-picture-using-ffmpegs-sws-scale
 	//avpicture_fill((AVPicture*)pFrameRGB, frame_buffer_RGB, AV_PIX_FMT_RGB24, pCodecContext->width, pCodecContext->height);  //deprecated use av_image_fill_arrays() instead.
@@ -289,7 +290,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 		// if it's the video stream
 		if (pPacket->stream_index == video_stream_index) {
 			//printf("AVPacket->pts %ld\n", pPacket->pts);
-			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, video_texture);
+			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, video_texture, num_components);
 
 			if (response < 0)
 				break;
@@ -311,7 +312,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 }
 
 
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, unsigned int video_texture)
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, unsigned int video_texture, int num_components)
 {
 	extern int verbose;
 
@@ -359,7 +360,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFr
 			if (response <= 0) {
 				printf("Error: sws_scale status = %d\n", response);
 			}
-			process_image(pFrameRGB, pCodecContext->frame_number, verbose, video_texture);
+			process_image(pFrameRGB, pCodecContext->frame_number, verbose, video_texture, num_components);
 			if (verbose & VERBOSE_IMAGE) {
 				char frame_filename[MAX_FNAME_LEN];
 				/*
