@@ -16,6 +16,7 @@
 #include <libswscale/swscale.h>
 #include <libavutil/imgutils.h>  // <-- Requiered for av_image_get_buffer_size
 #include <libavutil/opt.h> // for av_opt_set
+#include <libavdevice/avdevice.h>
 
 //#include "projective-geometry-type.h"
 //#include "net-sock-type.h"

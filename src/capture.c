@@ -102,6 +102,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 	}
 
 
+	avdevice_register_all();
 	avformat_network_init();
 
 	// Open the file and read its header. The codecs are not opened.
