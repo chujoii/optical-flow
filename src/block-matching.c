@@ -37,6 +37,7 @@ Code:
 
 #include "const.h"
 #include "image.h"
+#include "util.h"
 #include "block-matching.h"
 
 
@@ -167,7 +168,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 
 
-void compare_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, int max_shift, int block_size)
+void block_matching_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, int max_shift, int block_size)
 {
         extern struct imgRawImage* gui_image; // fixme: global variable
 
@@ -179,6 +180,8 @@ void compare_full_images (struct imgRawImage* old_image, struct imgRawImage* new
 	COORD_2DU pixel;
 	long long int coord_raw;
 
+	RGB_COLOR color_shift;
+
 	for (int j=0; j < vertical_blocks_num; j++) {
 		block.y = j * block_size;
 		for (int i=0; i < horizontal_blocks_num; i++) {
@@ -189,13 +192,55 @@ void compare_full_images (struct imgRawImage* old_image, struct imgRawImage* new
 				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + block_size); pixel.x++) {
 					coord_raw = coord_to_raw_chunk(gui_image, pixel);
 					if (coord_raw > 0) {
-						for (unsigned int color = 0; color < new_image->numComponents; color++) {
-							gui_image->lpData[coord_raw + color] = abs((int)coord_shift.x) + abs((int)coord_shift.y);
-						}
+						RGB_COLOR source_color = {
+							.r = new_image->lpData[coord_raw + R],
+							.g = new_image->lpData[coord_raw + G],
+							.b = new_image->lpData[coord_raw + B]};
+						color_shift = shift_to_color (source_color, coord_shift, max_shift);
+						gui_image->lpData[coord_raw + R] = color_shift.r;
+						gui_image->lpData[coord_raw + G] = color_shift.g;
+						gui_image->lpData[coord_raw + B] = color_shift.b;
 					}
 				}
 			}
 			
 		}
 	}
+}
+
+
+
+RGB_COLOR shift_to_color (RGB_COLOR source_color, COORD_2D shift, int max_shift)
+{
+	double monochrome = (0.2125 * source_color.r) + (0.7154 * source_color.g) + (0.0721 * source_color.b);
+
+	// HSL (for hue, saturation, lightness) and HSV (for hue, saturation, value; also known as HSB, for hue, saturation, brightness)
+	// convert HSL to RGB
+	// Given a color with hue H [0, 360], saturation S [0, 1], and lightness L [0, 1]
+	double hue = convert_radian_to_degree(angle_modulo(atan2(shift.y, shift.x)));
+	double saturation = sqrt((double)SQUARE(shift.x) + (double)SQUARE(shift.y)) / (double) max_shift;
+	double lightness = float_constrain(monochrome / 255.0, 0.0, 1.0);
+
+	double c = (1.0 - fabs(2.0*lightness - 1.0)) * saturation; // chroma
+	double h = hue / 60.0; // neighbour
+	double x = c * (1.0 - fabs(fmod(h, 2.0) - 1.0));
+	double m = lightness - c/2.0;
+
+	double cr = c;
+	double cg = x;
+	double cb = 0;
+	if (0.0 <= h && h < 1.0) {cr = c; cg = x; cb = 0;}
+	if (1.0 <= h && h < 2.0) {cr = x; cg = c; cb = 0;}
+	if (2.0 <= h && h < 3.0) {cr = 0; cg = c; cb = x;}
+	if (3.0 <= h && h < 4.0) {cr = 0; cg = x; cb = c;}
+	if (4.0 <= h && h < 5.0) {cr = x; cg = 0; cb = c;}
+	if (5.0 <= h           ) {cr = c; cg = 0; cb = x;} // 5.0 <= h && h < 6.0
+
+	RGB_COLOR rgb = {
+		.r = (cr + m) * 255,
+		.g = (cg + m) * 255,
+		.b = (cb + m) * 255,
+	};
+		
+	return rgb;
 }

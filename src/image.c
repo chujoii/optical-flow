@@ -52,6 +52,8 @@ Code:
 #include "image.h"
 #include "const.h"
 #include "gui.h"
+#include "block-matching.h"
+
 struct imgRawImage* loadJpegImageFile(char* lpFilename) {
 	struct jpeg_decompress_struct info;
 	struct jpeg_error_mgr err;
@@ -274,8 +276,10 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 	}
 
 	if (old_image != NULL) {
-		//process_optical_flow (glob_filter_type, frame_count, verbose);
+		block_matching_full_images (old_image, raw_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
 	}
+
+	
 
 	if (verbose & VERBOSE_IMAGE) {
 		draw_crosshair(gui_image);

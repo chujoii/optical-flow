@@ -40,8 +40,8 @@ Code:
 #include "block-matching.h"
 
 #define IMG_SIZE 12
-#define BLOCK_SIZE 4
-#define MAX_SHIFT 2
+#define BLOCK_SIZE_TEST 4
+#define MAX_SHIFT_TEST 2
 
 
 // fixme: global variables
@@ -106,7 +106,7 @@ int main ()
 {
 	COORD_2D block = {0, 0};
 	COORD_2D shift = {0, 0};
-	int block_size = BLOCK_SIZE;
+
 
 	raw_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
 	raw_image->width = IMG_SIZE;
@@ -138,7 +138,7 @@ int main ()
 	memset(gui_image->lpData, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 	block.x = 4; block.y = 4;
 	shift.x = 5; shift.y = 6;
-	diff_block (old_image, raw_image, block, shift, block_size, true);
+	diff_block (old_image, raw_image, block, shift, BLOCK_SIZE_TEST, true);
 	print_image (gui_image);
 
 
@@ -148,7 +148,7 @@ int main ()
 
 	raw_image->lpData = image_a0;
 	old_image->lpData = image_a1;
-	COORD_2D best_shift = find_block_correlation (old_image, raw_image, block, MAX_SHIFT, block_size);
+	COORD_2D best_shift = find_block_correlation (old_image, raw_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
 
 	printf("\n\n.A\n");
 	print_image (old_image);
@@ -160,7 +160,7 @@ int main ()
 	
 
 
-	compare_full_images (old_image, raw_image, MAX_SHIFT, block_size);
+	block_matching_full_images (old_image, raw_image, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
 	print_image (gui_image);
 
 	free(gui_image->lpData);

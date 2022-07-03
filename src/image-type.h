@@ -28,6 +28,12 @@ struct imgRawImage {
 };
 
 
+typedef struct rgb_color {
+	unsigned char r;
+	unsigned char g;
+	unsigned char b;
+} RGB_COLOR;
+
 enum colors {R, G, B};
 
 #endif /* IMAGE_TYPE_H */
