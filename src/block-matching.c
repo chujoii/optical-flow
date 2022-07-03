@@ -164,3 +164,38 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	}
 	return best_shift;
 }
+
+
+
+void compare_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, int max_shift, int block_size)
+{
+        extern struct imgRawImage* gui_image; // fixme: global variable
+
+	int horizontal_blocks_num = new_image->width / block_size + ((new_image->width % block_size > 0) ? 1 : 0);
+	int vertical_blocks_num = new_image->height / block_size + ((new_image->height % block_size > 0) ? 1 : 0);
+
+	COORD_2D coord_shift;
+	COORD_2D block;
+	COORD_2DU pixel;
+	long long int coord_raw;
+
+	for (int j=0; j < vertical_blocks_num; j++) {
+		block.y = j * block_size;
+		for (int i=0; i < horizontal_blocks_num; i++) {
+			block.x = i * block_size;
+			coord_shift = find_block_correlation (old_image, new_image, block, max_shift, block_size);
+
+			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + block_size); pixel.y++) {
+				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + block_size); pixel.x++) {
+					coord_raw = coord_to_raw_chunk(gui_image, pixel);
+					if (coord_raw > 0) {
+						for (unsigned int color = 0; color < new_image->numComponents; color++) {
+							gui_image->lpData[coord_raw + color] = abs((int)coord_shift.x) + abs((int)coord_shift.y);
+						}
+					}
+				}
+			}
+			
+		}
+	}
+}

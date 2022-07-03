@@ -160,6 +160,9 @@ int main ()
 	
 
 
+	compare_full_images (old_image, raw_image, MAX_SHIFT, block_size);
+	print_image (gui_image);
+
 	free(gui_image->lpData);
 	return 0;
 }
