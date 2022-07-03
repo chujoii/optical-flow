@@ -32,7 +32,14 @@ History:
 Code:
 */
 
-#include "capture.h"
+#include <stdlib.h>
+#include <math.h>
+
+#include "const.h"
+#include "image.h"
+#include "block-matching.h"
+
+
 
 /**
    block_size = 8 (for example)
@@ -64,45 +71,52 @@ Code:
    old = block coord in old image
    new = block coord in raw image
 */
-unsigned long int diff_block (coord_2Du old, coord_2Du new, int block_size)
+unsigned long int diff_block (struct imgRawImage* old_image, COORD_2DU old, struct imgRawImage* new_image, COORD_2DU new, int block_size)
 {
-	extern struct imgRawImage* raw_image; // fixme: global variable
-        extern struct imgRawImage* gui_image; // fixme: global variable
-        extern struct imgRawImage* old_image; // fixme: global variable
+	//struct imgRawImage* raw_image; // fixme: global variable
+        //extern struct imgRawImage* gui_image; // fixme: global variable
+        //struct imgRawImage* old_image; // fixme: global variable
 
 	unsigned long int sum = 0;
 	unsigned long int counter = 0;
 
 	// fixme: add simultaneous rotation and translation
-	coord_2Du coord_2d_old;
-	coord_2Du coord_2d_new;
-	unsigned long int coord_raw_old;
-	unsigned long int coord_raw_new;
+	COORD_2DU coord_2d_old;
+	COORD_2DU coord_2d_new;
+	long int coord_raw_old;
+	long int coord_raw_new;
 	int ox, oy; // index for old image
 	int nx, ny; // index for new image
 
 
 	int shift_x = new.x - old.x;
 	int shift_y = new.y - old.y;
+	for (ny = 0; ny < block_size; ny++) {
+		oy = ny - shift_y;
+		coord_2d_old.y = old.y + oy;
+		coord_2d_new.y = new.y + ny;
+		for (nx = 0; nx < block_size; nx++) {
+			ox = nx - shift_x;
+			coord_2d_old.x = old.x + ox;
+			coord_2d_new.x = new.x + nx;
 
-	for (nx = 0; nx < block_size; nx++) {
-		ox = nx - shift_x;
-		coord_2d_old.x = old.x + ox;
-		coord_2d_new.x = new.x + nx;
-		for (ny = 0; ny < block_size; ny++) {
-			oy = ny - shift_y;
-			coord_2d_old.y = old.y + oy;
-			coord_2d_new.y = new.y + ny;
+			coord_raw_old = coord_to_raw_chunk(old_image->width, old_image->numComponents, coord_2d_old);
+			coord_raw_new = coord_to_raw_chunk(new_image->width, new_image->numComponents, coord_2d_new);
 
-			coord_raw_old = coord_to_raw_chunk(old_image->width, coord_2d_old);
-			coord_raw_new = coord_to_raw_chunk(raw_image->width, coord_2d_new);
+			printf("compare old[%2d %2d]==[%2ld]\tnew[%2d %2d]==[%2ld]", ox, oy, coord_raw_old, nx, ny, coord_raw_new);
 
-			if (coord_raw_old < old_image->dwBufferBytes && coord_raw_new < raw_image->dwBufferBytes) { // coord_raw_xxx always > 0: because unsigned
-				for (unsigned int color = 0; color < raw_image->numComponents; color++) {
-					sum += abs(old_image[coord_raw_old + color] - raw_image[coord_raw_new + color]);
+			if (coord_raw_old > 0 &&
+			    coord_raw_old < old_image->dwBufferBytes &&
+			    coord_raw_new > 0 &&
+			    coord_raw_new < new_image->dwBufferBytes) {
+				for (unsigned int color = 0; color < new_image->numComponents; color++) {
+					printf("\t@");
+					sum += abs( (int)(old_image->lpData[coord_raw_old + color]) -
+						    (int)(new_image->lpData[coord_raw_new + color]));
 					counter++;
 				}
 			}
+			printf("\n");
 		}
 	}
 

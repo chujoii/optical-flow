@@ -157,7 +157,6 @@ int main (int argc, char **argv)
                 video_texture = init_shader_video();
         }
 
-	printf("hello world\n");
 	mainloop(dev_name, max_frame_count, video_texture);
 	return 0;
 }

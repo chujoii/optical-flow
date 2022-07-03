@@ -10,10 +10,10 @@
 #ifndef IMAGE_TYPE_H
 #define IMAGE_TYPE_H
 
-struct coord_2Du {
+typedef struct coord_2Du {
 	unsigned long int x;
 	unsigned long int y;
-};
+} COORD_2DU;
 
 struct imgRawImage {
 	unsigned int numComponents;

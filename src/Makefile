@@ -51,7 +51,7 @@ OPTICAL_FLOW_SRC=main.o capture.o image.o gui.o
 optical_flow : glsl $(OPTICAL_FLOW_SRC)
 	$(CC) $(CFLAGS) $(OPTICAL_FLOW_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
 
-UNIT_TESTING_SRC=unit-testing.o
+UNIT_TESTING_SRC=unit-testing.o block-matching.o image.o gui.o
 unit_testing : $(UNIT_TESTING_SRC)
 	$(CC) $(CFLAGS) $(UNIT_TESTING_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
 
