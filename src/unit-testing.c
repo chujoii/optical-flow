@@ -33,12 +33,15 @@ Code:
 */
 
 #include <stdio.h>
+#include <string.h> // memset
 
 #include "const.h"
 #include "gui.h"
 #include "block-matching.h"
 
-#define NUM_THREADS 5
+#define IMG_SIZE 12
+#define BLOCK_SIZE 4
+
 
 // fixme: global variables
 struct imgRawImage* raw_image;
@@ -64,43 +67,52 @@ float glob_zoom_ratio = 1.0;
 float glob_canvas_shift_y = 0.0;
 unsigned int video_texture = 0;
 
-unsigned char image_empty[] = {
-//      1, 2, 3, 4, 5, 6, 7, 8,
-	0, 0, 0, 0, 0, 0, 0, 0,   // 1
-	0, 0, 0, 0, 0, 0, 0, 0,   // 2
-	0, 0, 0, 0, 0, 0, 0, 0,   // 3
-	0, 0, 0, 0, 0, 0, 0, 0,   // 4
-	0, 0, 0, 0, 0, 0, 0, 0,   // 5
-	0, 0, 0, 0, 0, 0, 0, 0,   // 6
-	0, 0, 0, 0, 0, 0, 0, 0,   // 7
-	0, 0, 0, 0, 0, 0, 0, 0};  // 8
+unsigned char image_empty [IMG_SIZE*IMG_SIZE];
 
 
 
-int main (int argc, char **argv)
+int main ()
 {
-	COORD_2DU old = {0, 0};
-	COORD_2DU new = {1, 1};
-	int block_size = 8;
+	COORD_2D block = {0, 0};
+	COORD_2D shift = {0, 0};
+	int block_size = BLOCK_SIZE;
 
 	raw_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
-	raw_image->width = 8;
-	raw_image->height = 8;
+	raw_image->width = IMG_SIZE;
+	raw_image->height = IMG_SIZE;
 	raw_image->numComponents = 1;
 	raw_image->dwBufferBytes = raw_image->width * raw_image->height * raw_image->numComponents;
-	raw_image->lpData = image_empty; // (unsigned char*)malloc(sizeof(unsigned char)*raw_image->dwBufferBytes);
+	raw_image->lpData = image_empty;
 
 	old_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
-	old_image->width = 8;
-	old_image->height = 8;
+	old_image->width = IMG_SIZE;
+	old_image->height = IMG_SIZE;
 	old_image->numComponents = 1;
 	old_image->dwBufferBytes = old_image->width * old_image->height * old_image->numComponents;
-	old_image->lpData = image_empty; // (unsigned char*)malloc(sizeof(unsigned char)*old_image->dwBufferBytes);
+	old_image->lpData = image_empty;
+
+	gui_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
+	gui_image->width = IMG_SIZE;
+	gui_image->height = IMG_SIZE;
+	gui_image->numComponents = 1;
+	gui_image->dwBufferBytes = gui_image->width * gui_image->height * gui_image->numComponents;
+	gui_image->lpData = (unsigned char*)malloc(sizeof(unsigned char)*gui_image->dwBufferBytes);
+
+	memset(image_empty, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 
 
-	printf("%ld\n", diff_block (old_image, old, raw_image, new, block_size));
+
+
+
+	memset(gui_image->lpData, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
+	block.x = 4; block.y = 4;
+	shift.x = 5; shift.y = 6;
+	printf("%ld\n", diff_block (old_image, raw_image, block, shift, block_size));
+	print_image (gui_image);
+
 
 	//free(raw_image->lpData);
+	free(gui_image->lpData);
 	//free(old_image->lpData);
 	return 0;
 }

@@ -12,6 +12,7 @@
 
 #include "image-type.h"
 
-unsigned long int diff_block (struct imgRawImage* old_image, COORD_2DU old, struct imgRawImage* new_image, COORD_2DU new, int block_size);
+void print_image (struct imgRawImage* image);
+unsigned long int diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size);
 
 #endif /* BLOCK_MATCHING_H */
