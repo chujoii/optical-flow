@@ -41,6 +41,7 @@ Code:
 
 #define IMG_SIZE 12
 #define BLOCK_SIZE 4
+#define MAX_SHIFT 2
 
 
 // fixme: global variables
@@ -66,6 +67,36 @@ int glob_zero_point_fix = 0;
 float glob_zoom_ratio = 1.0;
 float glob_canvas_shift_y = 0.0;
 unsigned int video_texture = 0;
+
+unsigned char image_a0 [] = {
+//      1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  1
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  2
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  3
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  4
+	0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0,   //  5
+	0, 0, 0, 0, 8, 0, 8, 0, 0, 0, 0, 0,   //  6
+	0, 0, 0, 0, 8, 8, 8, 0, 0, 0, 0, 0,   //  7
+	0, 0, 0, 0, 8, 0, 8, 0, 0, 0, 0, 0,   //  8
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  9
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 10
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 11
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  // 12
+
+unsigned char image_a1 [] = {
+//      1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  1
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  2
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  3
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  4
+	0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0,   //  5
+	0, 0, 0, 0, 0, 7, 0, 9, 0, 0, 0, 0,   //  6
+	0, 0, 0, 0, 0, 7, 9, 9, 0, 0, 0, 0,   //  7
+	0, 0, 0, 0, 3, 7, 0, 9, 0, 0, 0, 0,   //  8
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   //  9
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 10
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 11
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};  // 12
 
 unsigned char image_empty [IMG_SIZE*IMG_SIZE];
 
@@ -107,12 +138,28 @@ int main ()
 	memset(gui_image->lpData, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 	block.x = 4; block.y = 4;
 	shift.x = 5; shift.y = 6;
-	printf("%ld\n", diff_block (old_image, raw_image, block, shift, block_size));
+	diff_block (old_image, raw_image, block, shift, block_size, true);
 	print_image (gui_image);
 
 
-	//free(raw_image->lpData);
+
+
+
+
+	raw_image->lpData = image_a0;
+	old_image->lpData = image_a1;
+	COORD_2D best_shift = find_block_correlation (old_image, raw_image, block, MAX_SHIFT, block_size);
+
+	printf("\n\n.A\n");
+	print_image (old_image);
+
+	printf("\n\nA\n");
+	print_image (raw_image);
+
+	printf("best shift = [%ld %ld]\n", best_shift.x, best_shift.y);
+	
+
+
 	free(gui_image->lpData);
-	//free(old_image->lpData);
 	return 0;
 }

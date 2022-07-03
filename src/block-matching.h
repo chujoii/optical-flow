@@ -13,6 +13,7 @@
 #include "image-type.h"
 
 void print_image (struct imgRawImage* image);
-unsigned long int diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size);
+double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size, int debug);
+COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, int max_shift, int block_size);
 
 #endif /* BLOCK_MATCHING_H */

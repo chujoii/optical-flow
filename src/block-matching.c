@@ -46,9 +46,14 @@ void print_image (struct imgRawImage* image)
 {
 	for (unsigned int j = 0; j < image->height; j++) {
 		for (unsigned int i = 0; i < image->width; i++) {
-			printf("%3d", image->lpData[coord_to_raw_chunk(image, (COORD_2DU){i, j})]);
+			int c = image->lpData[coord_to_raw_chunk(image, (COORD_2DU){i, j})];
+			if (c == 0) {
+				printf (" .");
+			} else {
+				printf("%2d", c);
+			}
 		}
-		printf("\n\n");
+		printf("\n");
 	}
 }
 
@@ -84,7 +89,7 @@ void print_image (struct imgRawImage* image)
    old = block coord in old image
    new = block coord in raw image
 */
-unsigned long int diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size)
+double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size, int debug)
 {
 	//struct imgRawImage* raw_image; // fixme: global variable
         extern struct imgRawImage* gui_image; // fixme: global variable
@@ -116,8 +121,10 @@ unsigned long int diff_block (struct imgRawImage* old_image, struct imgRawImage*
 
 				if (coord_raw_old >= 0 && coord_raw_new >= 0) {
 					for (unsigned int color = 0; color < new_image->numComponents; color++) {
-						gui_image->lpData[coord_raw_old + color] += 20;
-						gui_image->lpData[coord_raw_new + color] += 1;
+						if (debug == true) {
+							gui_image->lpData[coord_raw_old + color] += 20;
+							gui_image->lpData[coord_raw_new + color] += 1;
+						}
 						sum += abs( (int)(old_image->lpData[coord_raw_old + color]) -
 							    (int)(new_image->lpData[coord_raw_new + color]));
 						counter++;
@@ -128,5 +135,32 @@ unsigned long int diff_block (struct imgRawImage* old_image, struct imgRawImage*
 	}
 
 	if (counter == 0) return 0;
-	return sum/counter;
+	return (double)sum/(double)counter;
+}
+
+
+/**
+   Find block correlation with all possible shifts
+*/
+COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, int max_shift, int block_size)
+{
+	double result;
+	COORD_2D shift = {0, 0};
+
+	COORD_2D best_shift = shift;
+	double min_result = diff_block (old_image, new_image, block, shift, block_size, false);
+	if (min_result < EPSILON) return best_shift;
+
+	for (int j = -max_shift; j <= max_shift; j++) {
+		for (int i = -max_shift; i <= max_shift; i++) {
+			shift.x = i; shift.y = j;
+			result = diff_block (old_image, new_image, block, shift, block_size, false);
+			if (result < min_result) {
+				min_result = result;
+				best_shift = shift;
+				if (min_result < EPSILON) return best_shift;
+			}
+		}
+	}
+	return best_shift;
 }
