@@ -311,17 +311,21 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 	fflush(stdout);
 }
 
-unsigned long int coord_to_raw_chunk(int image_width, int num_components, struct coord_2Du coord)
+long long int coord_to_raw_chunk(struct imgRawImage* image, COORD_2DU coord)
 {
-	return (coord.y * image_width + coord.x) * num_components;
+	if (coord.x >= image->width ||
+	    coord.y >= image->height) return -1;
+	long long int raw_chunk = (coord.y * image->width + coord.x) * image->numComponents;
+	if (raw_chunk > (long long int)image->dwBufferBytes) return -1;
+	return raw_chunk;
 }
 
-struct coord_2Du raw_chunk_to_coord(int image_width, int num_components, unsigned long int r)
+struct coord_2Du raw_chunk_to_coord(struct imgRawImage* image, unsigned long int r)
 {
 	struct coord_2Du c;
-	unsigned long int wn = image_width * num_components; // fixme: wn==constant and need to calculate only once
+	unsigned long int wn = image->width * image->numComponents; // fixme: wn==constant and need to calculate only once
 	c.y = r / wn;
 	//c.x = (r % wn) / image->numComponents;
-	c.x = (r - c.y * wn) / num_components;
+	c.x = (r - c.y * wn) / image->numComponents;
 	return c;
 }

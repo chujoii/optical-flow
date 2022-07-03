@@ -532,7 +532,7 @@ void draw_crosshair (struct imgRawImage* image)
 	coord.y = shift_y;
 	for (coord.x = 0; coord.x < image->width; coord.x++) {
 		color = (coord.x % 2 == 0) ? 0xff : 0x00;
-		raw_coord = coord_to_raw_chunk(image->width, image->numComponents, coord);
+		raw_coord = coord_to_raw_chunk(image, coord);
 		image->lpData[raw_coord]     = color;
 		image->lpData[raw_coord + 1] = color;
 		image->lpData[raw_coord + 2] = color;
@@ -542,7 +542,7 @@ void draw_crosshair (struct imgRawImage* image)
 	coord.x = shift_x;
 	for (coord.y = 0; coord.y < image->height; coord.y++) {
 		color = (coord.y % 2 == 0) ? 0xff : 0x00;
-		raw_coord = coord_to_raw_chunk(image->width, image->numComponents, coord);
+		raw_coord = coord_to_raw_chunk(image, coord);
 		image->lpData[raw_coord]     = color;
 		image->lpData[raw_coord + 1] = color;
 		image->lpData[raw_coord + 2] = color;
@@ -579,7 +579,7 @@ void draw_graph (struct imgRawImage* draw_image, int len_data, float * data, int
 	for (int i = 0; i < len_data; i++) {
 		coord.x = shift_x + (len_data - i - 1)*scale_x;
 		coord.y = shift_y + (data[i]-min_val)*scale_y;
-		unsigned long int raw_coord = coord_to_raw_chunk(draw_image->width, draw_image->numComponents, coord);
+		unsigned long int raw_coord = coord_to_raw_chunk(draw_image, coord);
 		if (raw_coord < draw_image->dwBufferBytes) {
 			unsigned int old_color = draw_image->lpData[raw_coord + color] + 0xf0;
 			old_color = (old_color > 0xff) ? 0xff - old_color : old_color;

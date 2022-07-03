@@ -15,6 +15,11 @@ typedef struct coord_2Du {
 	unsigned long int y;
 } COORD_2DU;
 
+typedef struct coord_2D {
+	long int x;
+	long int y;
+} COORD_2D;
+
 struct imgRawImage {
 	unsigned int numComponents;
 	unsigned long int width, height;
