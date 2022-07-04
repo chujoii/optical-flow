@@ -150,6 +150,8 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 	COORD_2D best_shift = shift;
 	double min_result = diff_block (old_image, new_image, block, shift, block_size, false);
+	double max_result = min_result;
+
 	if (min_result < EPSILON) return best_shift;
 
 	for (int j = -max_shift; j <= max_shift; j++) {
@@ -161,8 +163,12 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 				best_shift = shift;
 				if (min_result < EPSILON) return best_shift;
 			}
+			if (result > max_result) {
+				max_result = result;
+			}
 		}
 	}
+	if (max_result - min_result < THRESHOLD) return (COORD_2D) {0, 0};
 	return best_shift;
 }
 

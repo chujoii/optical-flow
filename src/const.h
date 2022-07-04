@@ -10,7 +10,8 @@
 #ifndef CONST_H
 #define CONST_H
 
-#define EPSILON 1.0
+#define EPSILON 1.0e-3
+#define THRESHOLD 10
 
 #define BLOCK_SIZE 8
 #define MAX_SHIFT 4
