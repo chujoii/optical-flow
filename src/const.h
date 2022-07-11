@@ -11,6 +11,7 @@
 #define CONST_H
 
 #define EPSILON 1.0e-3
+#define HISTOGRAM_EPSILON 1.0e-1
 #define THRESHOLD 2
 
 #define BLOCK_SIZE 8

@@ -148,7 +148,7 @@ double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image,
 
 static int cmp_double(const void * a, const void * b)
 {
-        return (*(double*)a > *(double*)b) ? -1 : 1;
+	return (((HISTOGRAM_STORAGE *)a)->diff > ((HISTOGRAM_STORAGE *)b)->diff) ? -1 : 1;
 }
 
 
@@ -167,29 +167,45 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 	if (min_result < EPSILON) return best_shift;
 
-	double histogram[SQUARE(max_shift * 2 + 1)];
+	HISTOGRAM_STORAGE histogram[SQUARE(max_shift * 2 + 1)];
 	int counter = 0;
 
 	for (int j = -max_shift; j <= max_shift; j++) {
 		for (int i = -max_shift; i <= max_shift; i++) {
 			shift.x = i; shift.y = j;
 			result = diff_block (old_image, new_image, gui_image, block, shift, block_size);
-			histogram[counter++] = result;
-			if (result < min_result) {
-				min_result = result;
-				best_shift = shift;
-				if (min_result < EPSILON) return best_shift;
-			}
-			if (result > max_result) {
-				max_result = result;
-			}
+
+			histogram[counter].diff = result;
+			histogram[counter].shift.x = i;
+			histogram[counter].shift.y = j;
+			counter++;
 		}
 	}
-	qsort(histogram, counter, sizeof(double), cmp_double);
-	double median = histogram[counter/2];
+
+	qsort(histogram, counter, sizeof(HISTOGRAM_STORAGE), cmp_double); // h[0] = max; h[counter-1] = min
+	double median = histogram[counter/2].diff;
+	min_result = histogram[counter - 1].diff;
+	max_result = histogram[0].diff;
+	best_shift = histogram[counter - 1].shift;
 
 	if (median - min_result < THRESHOLD) return (COORD_2D) {0, 0};
 	//if ((median - min_result) / (max_result - median)  < THRESHOLD) return (COORD_2D) {0, 0};
+
+	int i = counter - 1;
+	double best_distance = sqrt(2*SQUARE(max_shift));
+	double distance;
+
+	// some shift variants --- equal by "diff" value, so find shift variant with smallest distance to center
+	while (i > 0 && histogram[i].diff - min_result < HISTOGRAM_EPSILON) {
+		distance = sqrt(SQUARE(histogram[i].shift.x) + SQUARE(histogram[i].shift.y));
+		if (distance < best_distance) {
+			best_distance = distance;
+			best_shift = histogram[i].shift;
+		}
+
+		i--;
+	}
+
 	return best_shift;
 }
 
