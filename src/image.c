@@ -276,7 +276,7 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 	}
 
 	if (old_image != NULL) {
-		block_matching_full_images (old_image, raw_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
+		block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
 	}
 
 	

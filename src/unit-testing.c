@@ -141,7 +141,7 @@ int main ()
 	block.x = 4; block.y = 4;
 	shift.x = 5; shift.y = 6;
 	// uncomment "#define DEBUG" in top of file
-	diff_block (old_image, raw_image, block, shift, BLOCK_SIZE_TEST);
+	diff_block (old_image, raw_image, gui_image, block, shift, BLOCK_SIZE_TEST);
 	print_image (gui_image);
 
 
@@ -151,7 +151,7 @@ int main ()
 	// comment "#define DEBUG" in top of file
 	raw_image->lpData = image_a0;
 	old_image->lpData = image_a1;
-	COORD_2D best_shift = find_block_correlation (old_image, raw_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
+	COORD_2D best_shift = find_block_correlation (old_image, raw_image, gui_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
 
 	printf("\n\n.A\n");
 	print_image (old_image);
@@ -163,7 +163,7 @@ int main ()
 	
 
 
-	block_matching_full_images (old_image, raw_image, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
+	block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
 	print_image (gui_image);
 
 	free(gui_image->lpData);

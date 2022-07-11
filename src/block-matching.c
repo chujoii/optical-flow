@@ -96,11 +96,10 @@ int get_block_numbers (int image_size, int block_size)
    old = block coord in old image
    new = block coord in raw image
 */
-double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size)
+double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
+		   COORD_2D block, COORD_2D shift, int block_size)
 {
-	//struct imgRawImage* raw_image; // fixme: global variable
-        extern struct imgRawImage* gui_image; // fixme: global variable
-        //struct imgRawImage* old_image; // fixme: global variable
+	(void)*gui_image; // suppress "unused parameter" warnings
 
 	unsigned long int sum = 0;
 	unsigned long int counter = 0;
@@ -157,13 +156,13 @@ static int cmp_double(const void * a, const void * b)
 /**
    Find block correlation with all possible shifts
 */
-COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, int max_shift, int block_size)
+COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image, COORD_2D block, int max_shift, int block_size)
 {
 	double result;
 	COORD_2D shift = {0, 0};
 
 	COORD_2D best_shift = shift;
-	double min_result = diff_block (old_image, new_image, block, shift, block_size);
+	double min_result = diff_block (old_image, new_image, gui_image, block, shift, block_size);
 	double max_result = min_result;
 
 	if (min_result < EPSILON) return best_shift;
@@ -174,7 +173,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	for (int j = -max_shift; j <= max_shift; j++) {
 		for (int i = -max_shift; i <= max_shift; i++) {
 			shift.x = i; shift.y = j;
-			result = diff_block (old_image, new_image, block, shift, block_size);
+			result = diff_block (old_image, new_image, gui_image, block, shift, block_size);
 			histogram[counter++] = result;
 			if (result < min_result) {
 				min_result = result;
@@ -196,10 +195,9 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 
 
-void block_matching_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, int max_shift, int block_size)
+void block_matching_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
+				 int max_shift, int block_size)
 {
-        extern struct imgRawImage* gui_image; // fixme: global variable
-
 	int horizontal_blocks_num = get_block_numbers (new_image->width,  block_size);
 	int vertical_blocks_num   = get_block_numbers (new_image->height, block_size);
 
@@ -214,7 +212,7 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 		block.y = j * block_size;
 		for (int i=0; i < horizontal_blocks_num; i++) {
 			block.x = i * block_size;
-			coord_shift = find_block_correlation (old_image, new_image, block, max_shift, block_size);
+			coord_shift = find_block_correlation (old_image, new_image, gui_image, block, max_shift, block_size);
 
 			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + block_size); pixel.y++) {
 				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + block_size); pixel.x++) {
