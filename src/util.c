@@ -38,6 +38,18 @@ Code:
 #include "gui.h"
 
 
+
+//#define DEBUG
+// add to project previous string for debug=ON
+// change printf(x) -> fprintf(stderr, x)
+#ifdef DEBUG
+ #define DEBUG_PRINT(x)  printf x
+#else
+ #define DEBUG_PRINT(x)
+#endif
+
+
+
 int int_constrain(int val, int min_val, int max_val)
 {
 	return MIN(max_val, MAX(min_val, val));

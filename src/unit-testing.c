@@ -39,6 +39,8 @@ Code:
 #include "gui.h"
 #include "block-matching.h"
 
+//#define DEBUG
+
 #define IMG_SIZE 12
 #define BLOCK_SIZE_TEST 4
 #define MAX_SHIFT_TEST 2
@@ -138,14 +140,15 @@ int main ()
 	memset(gui_image->lpData, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 	block.x = 4; block.y = 4;
 	shift.x = 5; shift.y = 6;
-	diff_block (old_image, raw_image, block, shift, BLOCK_SIZE_TEST, true);
+	// uncomment "#define DEBUG" in top of file
+	diff_block (old_image, raw_image, block, shift, BLOCK_SIZE_TEST);
 	print_image (gui_image);
 
 
 
 
 
-
+	// comment "#define DEBUG" in top of file
 	raw_image->lpData = image_a0;
 	old_image->lpData = image_a1;
 	COORD_2D best_shift = find_block_correlation (old_image, raw_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);

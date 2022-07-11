@@ -90,7 +90,7 @@ void print_image (struct imgRawImage* image)
    old = block coord in old image
    new = block coord in raw image
 */
-double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size, int debug)
+double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, COORD_2D block, COORD_2D shift, int block_size)
 {
 	//struct imgRawImage* raw_image; // fixme: global variable
         extern struct imgRawImage* gui_image; // fixme: global variable
@@ -122,10 +122,10 @@ double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image,
 
 				if (coord_raw_old >= 0 && coord_raw_new >= 0) {
 					for (unsigned int color = 0; color < new_image->numComponents; color++) {
-						if (debug == true) {
-							gui_image->lpData[coord_raw_old + color] += 20;
-							gui_image->lpData[coord_raw_new + color] += 1;
-						}
+#ifdef DEBUG
+						gui_image->lpData[coord_raw_old + color] += 20;
+						gui_image->lpData[coord_raw_new + color] += 1;
+#endif
 						sum += abs( (int)(old_image->lpData[coord_raw_old + color]) -
 							    (int)(new_image->lpData[coord_raw_new + color]));
 						counter++;
@@ -149,7 +149,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	COORD_2D shift = {0, 0};
 
 	COORD_2D best_shift = shift;
-	double min_result = diff_block (old_image, new_image, block, shift, block_size, false);
+	double min_result = diff_block (old_image, new_image, block, shift, block_size);
 	double max_result = min_result;
 
 	if (min_result < EPSILON) return best_shift;
@@ -157,7 +157,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	for (int j = -max_shift; j <= max_shift; j++) {
 		for (int i = -max_shift; i <= max_shift; i++) {
 			shift.x = i; shift.y = j;
-			result = diff_block (old_image, new_image, block, shift, block_size, false);
+			result = diff_block (old_image, new_image, block, shift, block_size);
 			if (result < min_result) {
 				min_result = result;
 				best_shift = shift;
