@@ -59,6 +59,12 @@ void print_image (struct imgRawImage* image)
 }
 
 
+int get_block_numbers (int image_size, int block_size)
+{
+	return image_size / block_size + ((image_size % block_size > 0) ? 1 : 0);
+}
+
+
 
 /**
    block_size = 8 (for example)
@@ -194,8 +200,8 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 {
         extern struct imgRawImage* gui_image; // fixme: global variable
 
-	int horizontal_blocks_num = new_image->width / block_size + ((new_image->width % block_size > 0) ? 1 : 0);
-	int vertical_blocks_num = new_image->height / block_size + ((new_image->height % block_size > 0) ? 1 : 0);
+	int horizontal_blocks_num = get_block_numbers (new_image->width,  block_size);
+	int vertical_blocks_num   = get_block_numbers (new_image->height, block_size);
 
 	COORD_2D coord_shift;
 	COORD_2D block;
