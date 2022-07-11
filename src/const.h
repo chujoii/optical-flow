@@ -11,7 +11,7 @@
 #define CONST_H
 
 #define EPSILON 1.0e-3
-#define THRESHOLD 10
+#define THRESHOLD 2
 
 #define BLOCK_SIZE 8
 #define MAX_SHIFT 4

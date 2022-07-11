@@ -140,6 +140,14 @@ double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image,
 }
 
 
+
+static int cmp_double(const void * a, const void * b)
+{
+        return (*(double*)a > *(double*)b) ? -1 : 1;
+}
+
+
+
 /**
    Find block correlation with all possible shifts
 */
@@ -154,10 +162,14 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 	if (min_result < EPSILON) return best_shift;
 
+	double histogram[SQUARE(max_shift * 2 + 1)];
+	int counter = 0;
+
 	for (int j = -max_shift; j <= max_shift; j++) {
 		for (int i = -max_shift; i <= max_shift; i++) {
 			shift.x = i; shift.y = j;
 			result = diff_block (old_image, new_image, block, shift, block_size);
+			histogram[counter++] = result;
 			if (result < min_result) {
 				min_result = result;
 				best_shift = shift;
@@ -168,7 +180,11 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 			}
 		}
 	}
-	if (max_result - min_result < THRESHOLD) return (COORD_2D) {0, 0};
+	qsort(histogram, counter, sizeof(double), cmp_double);
+	double median = histogram[counter/2];
+
+	if (median - min_result < THRESHOLD) return (COORD_2D) {0, 0};
+	//if ((median - min_result) / (max_result - median)  < THRESHOLD) return (COORD_2D) {0, 0};
 	return best_shift;
 }
 
