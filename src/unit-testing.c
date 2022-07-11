@@ -149,8 +149,8 @@ int main ()
 
 
 	// comment "#define DEBUG" in top of file
-	raw_image->lpData = image_a0;
-	old_image->lpData = image_a1;
+	raw_image->lpData = image_a1;
+	old_image->lpData = image_a0;
 	COORD_2D best_shift = find_block_correlation (old_image, raw_image, gui_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
 
 	printf("\n\n.A\n");

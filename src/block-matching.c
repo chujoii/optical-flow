@@ -112,11 +112,11 @@ double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image,
 	int nx, ny; // index for new image
 
 	for (ny = 0; ny < block_size; ny++) {
-		coord_2d_old.y = block.y + ny + shift.y;
-		coord_2d_new.y = block.y + ny;
+		coord_2d_old.y = block.y + ny;
+		coord_2d_new.y = block.y + ny + shift.y;
 		for (nx = 0; nx < block_size; nx++) {
-			coord_2d_old.x = block.x + nx + shift.x;
-			coord_2d_new.x = block.x + nx;
+			coord_2d_old.x = block.x + nx;
+			coord_2d_new.x = block.x + nx + shift.x;
 
 			if (coord_2d_old.x >= 0 && coord_2d_old.y >= 0 &&
 			    coord_2d_new.x >= 0 && coord_2d_new.y >= 0) {
