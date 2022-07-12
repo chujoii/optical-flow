@@ -223,3 +223,24 @@ int search_index_of_nearest_point (int len_array, float * array_x, float * array
 
 	return min_index;
 }
+
+
+
+/**
+   see https://stackoverflow.com/questions/2509679/how-to-generate-a-random-integer-number-from-within-a-range
+*/
+int rnd(int min, int max)
+{
+	// for float 	r = (double)rand() / (double)(RAND_MAX);
+
+	int r;
+	int range = 1 + max - min;
+	int buckets = RAND_MAX / range;
+	int limit = buckets * range;
+
+	do {
+		r = rand();
+	} while (r >= limit);
+
+	return min + (r / buckets);
+}

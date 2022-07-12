@@ -34,5 +34,6 @@ float opening_angle (float a, float b);
 float first_derivative (float * array, int i, int len_array);
 float second_derivative (float * array, int i, int len_array);
 int search_index_of_nearest_point (int len_array, float * array_x, float * array_y, float search_val_x, float search_val_y, int start_point_index, float square_error);
+int rnd(int min, int max);
 
 #endif /* UTIL_H */
