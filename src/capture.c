@@ -73,7 +73,7 @@ Code:
 #include "capture.h"
 #include "gui.h"
 #include "const.h"
-
+#include "block-matching.h"
 
 
 #define MAX_FNAME_LEN 128
@@ -281,6 +281,8 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 
 	///////////////////////////////// end prepare to convert YCbCr to RGB format (YCbCr is often confused with the YUV) //////////////////////////////////////////
 
+	OPTICAL_FLOW flow;
+	init_block_matching (pFrameRGB->width, pFrameRGB->height, BLOCK_SIZE, MAX_SHIFT, &flow);
 
 	// fill the Packet with data from the Stream
 	// https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61
@@ -290,7 +292,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 		// if it's the video stream
 		if (pPacket->stream_index == video_stream_index) {
 			//printf("AVPacket->pts %ld\n", pPacket->pts);
-			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, video_texture, num_components);
+			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, video_texture, num_components, &flow);
 
 			if (response < 0)
 				break;
@@ -302,6 +304,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 
 	printf("releasing all the resources\n");
 
+	free_block_matching (&flow);
 	avformat_close_input(&pFormatContext);
 	av_free(frame_buffer_RGB);
 	av_frame_free(&pFrameRGB);
@@ -312,7 +315,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 }
 
 
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, unsigned int video_texture, int num_components)
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
 {
 	extern int verbose;
 
@@ -360,7 +363,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFr
 			if (response <= 0) {
 				printf("Error: sws_scale status = %d\n", response);
 			}
-			process_image(pFrameRGB, pCodecContext->frame_number, verbose, video_texture, num_components);
+			process_image(pFrameRGB, pCodecContext->frame_number, verbose, video_texture, num_components, flow);
 			if (verbose & VERBOSE_IMAGE) {
 				char frame_filename[MAX_FNAME_LEN];
 				/*

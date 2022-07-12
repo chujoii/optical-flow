@@ -305,6 +305,52 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 
 
 
+void block_matching_optimized_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
+				      OPTICAL_FLOW* flow)
+{
+	int horizontal_blocks_num = flow->width;
+	int vertical_blocks_num   = flow->height;
+
+	COORD_2D coord_shift;
+	COORD_2D block;
+	COORD_2DU pixel;
+	long long int coord_raw;
+
+	RGB_COLOR color_shift;
+
+
+	// find in previous success blocks
+	for (int j=0; j < vertical_blocks_num; j++) {
+		block.y = j * flow->block_size_in_pixel;
+		for (int i=0; i < horizontal_blocks_num; i++) {
+			block.x = i * flow->block_size_in_pixel;
+
+			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
+			if (flow->array[raw_flow_coord].shift.x != 0 && flow->array[raw_flow_coord].shift.y != 0) {
+				coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
+
+				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
+						coord_raw = coord_to_raw_chunk(gui_image, pixel);
+						if (coord_raw > 0) {
+							RGB_COLOR source_color = {
+								.r = new_image->lpData[coord_raw + R],
+								.g = new_image->lpData[coord_raw + G],
+								.b = new_image->lpData[coord_raw + B]};
+							color_shift = shift_to_color (source_color, coord_shift, flow->max_shift);
+							gui_image->lpData[coord_raw + R] = color_shift.r;
+							gui_image->lpData[coord_raw + G] = color_shift.g;
+							gui_image->lpData[coord_raw + B] = color_shift.b;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+
+
 RGB_COLOR shift_to_color (RGB_COLOR source_color, COORD_2D shift, int max_shift)
 {
 	double monochrome = (0.2125 * source_color.r) + (0.7154 * source_color.g) + (0.0721 * source_color.b);

@@ -133,7 +133,8 @@ int main ()
 
 	memset(image_empty, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 
-
+	OPTICAL_FLOW flow;
+	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST, MAX_SHIFT_TEST, &flow);
 
 
 
@@ -167,5 +168,6 @@ int main ()
 	print_image (gui_image);
 
 	free(gui_image->lpData);
+	free_block_matching (&flow);
 	return 0;
 }

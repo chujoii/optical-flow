@@ -241,11 +241,12 @@ int storeJpegImageFile(struct imgRawImage* lpImage, char* lpFilename) {
 
 
 
-void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned int video_texture, int num_components)
+void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
 {
 	extern struct imgRawImage* raw_image; // fixme: global variable
 	extern struct imgRawImage* gui_image; // fixme: global variable
 	extern struct imgRawImage* old_image; // fixme: global variable
+	//extern OPTICAL_FLOW* flow; // fixem: global variable
 
 	raw_image = (struct imgRawImage*)malloc(sizeof(struct imgRawImage));
 	raw_image->numComponents = num_components;
@@ -276,7 +277,8 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 	}
 
 	if (old_image != NULL) {
-		block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
+		//block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
+		block_matching_optimized_images (old_image, raw_image, gui_image, flow); // optical flow
 	}
 
 	
