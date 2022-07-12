@@ -39,7 +39,60 @@ Code:
 #include "image.h"
 #include "util.h"
 #include "block-matching.h"
+#include "block-matching-type.h"
 
+
+
+long long int coord_to_raw_flow(OPTICAL_FLOW * flow, COORD_2DU coord)
+{
+	if (coord.x >= flow->width ||
+	    coord.y >= flow->height) return -1;
+	long long int raw_chunk = coord.y * flow->width + coord.x;
+	if (raw_chunk > (long long int)flow->array_size) return -1;
+	return raw_chunk;
+}
+
+
+
+COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r)
+{
+	COORD_2DU c;
+	c.y = r / flow->width;
+	c.x = (r - c.y * flow->width);
+	return c;
+}
+
+
+
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift, OPTICAL_FLOW* flow)
+{
+	flow->block_size_in_pixel = block_size;
+	flow->max_shift = max_shift;
+
+	flow->width = get_block_numbers (image_width,  block_size);
+	flow->height = get_block_numbers (image_height, block_size);
+	flow->array_size = flow->width * flow->height;
+
+	flow->array = (BLK*) malloc(sizeof(BLK) * flow->array_size);
+
+	for (unsigned long int j = 0; j < flow->height; j++) {
+		for (unsigned long int i = 0; i < flow->width; i++) {
+			COORD_2DU coord = {.x=i, .y=j};
+			unsigned long int index = coord_to_raw_flow(flow, coord);
+			flow->array[index].last_update = 0;
+			flow->array[index].shift.x = 0;
+			flow->array[index].shift.y = 0;
+		}
+	}
+	return 0;
+}
+
+
+
+void free_block_matching (OPTICAL_FLOW* flow)
+{
+	free(flow->array);
+}
 
 
 
