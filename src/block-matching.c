@@ -326,9 +326,10 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			block.x = i * flow->block_size_in_pixel;
 
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-			if (flow->array[raw_flow_coord].shift.x != 0 && flow->array[raw_flow_coord].shift.y != 0) {
+			if (labs(flow->array[raw_flow_coord].shift.x) + labs(flow->array[raw_flow_coord].shift.y) > 0) {
 				coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
-
+				flow->array[raw_flow_coord].shift = coord_shift;
+				flow->array[raw_flow_coord].last_update = 0;
 				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
 					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
 						coord_raw = coord_to_raw_chunk(gui_image, pixel);
@@ -346,6 +347,74 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 				}
 			}
 		}
+	}
+
+
+	// process random block
+	int counter = 0;
+	while (counter < 1000) {
+		int i = rnd(0, horizontal_blocks_num - 1);
+		int j = rnd(0, vertical_blocks_num - 1);
+		int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
+		if (flow->array[raw_flow_coord].last_update != 0) {
+			block.x = i * flow->block_size_in_pixel;
+			block.y = j * flow->block_size_in_pixel;
+
+			coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
+			flow->array[raw_flow_coord].shift = coord_shift;
+			flow->array[raw_flow_coord].last_update = 0;
+			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
+					coord_raw = coord_to_raw_chunk(gui_image, pixel);
+					if (coord_raw > 0) {
+						RGB_COLOR source_color = {
+							.r = new_image->lpData[coord_raw + R],
+							.g = new_image->lpData[coord_raw + G],
+							.b = new_image->lpData[coord_raw + B]};
+						color_shift = shift_to_color (source_color, coord_shift, flow->max_shift);
+						gui_image->lpData[coord_raw + R] = color_shift.r;
+						gui_image->lpData[coord_raw + G] = color_shift.g;
+						gui_image->lpData[coord_raw + B] = color_shift.b;
+					}
+				}
+			}
+		}
+		counter++;
+	}
+
+
+
+	// set monochrome for not updated
+	coord_shift = (COORD_2D) {.x=0, .y=0};
+	for (int j=0; j < vertical_blocks_num; j++) {
+		block.y = j * flow->block_size_in_pixel;
+		for (int i=0; i < horizontal_blocks_num; i++) {
+			block.x = i * flow->block_size_in_pixel;
+
+			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
+			if (flow->array[raw_flow_coord].last_update != 0) {
+				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
+						coord_raw = coord_to_raw_chunk(gui_image, pixel);
+						if (coord_raw > 0) {
+							RGB_COLOR source_color = {
+								.r = new_image->lpData[coord_raw + R],
+								.g = new_image->lpData[coord_raw + G],
+								.b = new_image->lpData[coord_raw + B]};
+							color_shift = shift_to_color (source_color, coord_shift, flow->max_shift);
+							gui_image->lpData[coord_raw + R] = color_shift.r;
+							gui_image->lpData[coord_raw + G] = color_shift.g;
+							gui_image->lpData[coord_raw + B] = color_shift.b;
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	for (unsigned long int i = 0; i < flow->array_size; i++) {
+		flow->array[i].last_update += 1;
 	}
 }
 

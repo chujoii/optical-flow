@@ -34,6 +34,7 @@ Code:
 
 #include <stdio.h>
 #include <getopt.h>          /* getopt_long() */
+#include <time.h>
 
 #include "const.h"
 #include "capture.h"
@@ -156,6 +157,9 @@ int main (int argc, char **argv)
                 printf("init_gui = %d", ret);
                 video_texture = init_shader_video();
         }
+
+
+	srandom((unsigned int)time(NULL));
 
 	mainloop(dev_name, max_frame_count, video_texture);
 	return 0;
