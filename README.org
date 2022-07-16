@@ -33,7 +33,23 @@ optical flow block matching
 * Description:
 
 * Usage:
+Generate image with random texture
+mx=1920;my=1080;head -c "$((3*mx*my))" /dev/urandom | display -depth 8 -size "${mx}x${my}" RGB:-
+Or scaled
+mx=100;my=100;head -c "$((3*mx*my))" /dev/urandom | display -depth 8 -size "${mx}x${my}" -filter box -resize 1000x1000 RGB:-
+Or grey
+mx=100;my=100;head -c "$((3*mx*my))" /dev/urandom | display -depth 8 -size "${mx}x${my}" -filter box -resize 1000x1000 -colorspace gray RGB:-
+Or black/white
+mx=100;my=50;head -c "$((3*mx*my))" /dev/urandom | display -depth 8 -size "${mx}x${my}" -filter box -resize 2000x1000 -colorspace gray -threshold 50% RGB:-
+Or save it as PNG, and view with image viewer on you screen
+mx=320;my=256;head -c "$((3*mx*my))" /dev/urandom | convert -depth 8 -size "${mx}x${my}" RGB:- random.png
 
+Use the webcam to view the image of the texture on the monitor screen
+(or print the texture), and place an optically inhomogeneous object
+between the webcam and the texture:
+./optical_flow -v 2 -d /dev/video0
+Or
+./optical_flow -v 2 -d 'rtsp://user:password@192.168.100.101/Streaming/channels/101'
 * History:
 Project created at 2022-04(Apr)-12
 
