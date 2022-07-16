@@ -34,6 +34,8 @@ Code:
 
 #include <stdlib.h>
 #include <math.h>
+#include <time.h>
+#include <stdio.h>
 
 #include "const.h"
 #include "image.h"
@@ -64,10 +66,11 @@ COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r)
 
 
 
-int init_block_matching (int image_width, int image_height, int block_size, int max_shift, OPTICAL_FLOW* flow)
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift, long int nspf, OPTICAL_FLOW* flow)
 {
 	flow->block_size_in_pixel = block_size;
 	flow->max_shift = max_shift;
+	flow->nspf = nspf;
 
 	flow->width = get_block_numbers (image_width,  block_size);
 	flow->height = get_block_numbers (image_height, block_size);
@@ -319,6 +322,11 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 	RGB_COLOR color_shift;
 
 
+	struct timespec ts_start;
+        struct timespec ts_current;
+        clock_gettime(CLOCK_MONOTONIC, &ts_start);
+
+
 	// find in previous success blocks
 	for (int j=0; j < vertical_blocks_num; j++) {
 		block.y = j * flow->block_size_in_pixel;
@@ -351,8 +359,8 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 
 
 	// process random block
-	int counter = 0;
-	while (counter < 1000) {
+	int time_duration;
+	do {
 		int i = rnd(0, horizontal_blocks_num - 1);
 		int j = rnd(0, vertical_blocks_num - 1);
 		int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
@@ -363,6 +371,17 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
 			flow->array[raw_flow_coord].shift = coord_shift;
 			flow->array[raw_flow_coord].last_update = 0;
+		}
+
+		clock_gettime(CLOCK_MONOTONIC, &ts_current);
+		if (ts_current.tv_sec - ts_start.tv_sec == 0) {
+			time_duration = ts_current.tv_nsec - ts_start.tv_nsec;
+		} else { // fixme: if more than one seconds, then need add seconds diff
+			time_duration = ts_start.tv_nsec - ts_current.tv_nsec;
+		}
+	} while (time_duration < flow->nspf);
+
+
 			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
 				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
 					coord_raw = coord_to_raw_chunk(gui_image, pixel);

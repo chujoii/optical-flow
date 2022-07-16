@@ -44,7 +44,7 @@ Code:
 #define IMG_SIZE 12
 #define BLOCK_SIZE_TEST 4
 #define MAX_SHIFT_TEST 2
-
+#define FPS 25
 
 // fixme: global variables
 struct imgRawImage* raw_image;
@@ -134,7 +134,7 @@ int main ()
 	memset(image_empty, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 
 	OPTICAL_FLOW flow;
-	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST, MAX_SHIFT_TEST, &flow);
+	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST, MAX_SHIFT_TEST, NANOSECONDS_IN_SECOND / FPS, &flow);
 
 
 

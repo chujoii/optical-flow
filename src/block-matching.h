@@ -14,7 +14,7 @@
 #include "block-matching-type.h"
 
 void print_image (struct imgRawImage* image);
-int init_block_matching (int image_width, int image_height, int block_size, int max_shift, OPTICAL_FLOW* flow);
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift, long int nspf, OPTICAL_FLOW* flow);
 void free_block_matching ();
 int get_block_numbers (int image_size, int block_size);
 double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,

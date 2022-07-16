@@ -16,7 +16,9 @@
 
 #define BLOCK_SIZE 8
 #define MAX_SHIFT 4
+#define FPS 15
 
+#define NANOSECONDS_IN_SECOND 1000000000
 #define SECONDS_IN_DEGREE 60.0
 
 enum verbose_level {
