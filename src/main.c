@@ -44,7 +44,7 @@ Code:
 
 
 
-static const char short_options[] = "d:hoyn:v:";
+static const char short_options[] = "d:hoyn:v:f";
 
 static const struct option
 long_options[] = {
@@ -56,6 +56,7 @@ long_options[] = {
         { "yuyv",               no_argument,       NULL, 'y' },
         { "numframes",          required_argument, NULL, 'n' },
         { "verbose",            required_argument, NULL, 'v' },
+        { "first",              no_argument,       NULL, 'f' },
         { 0, 0, 0, 0 }
 };
 
@@ -97,6 +98,7 @@ int main (int argc, char **argv)
 	int out_buf = 0;
 	int force_format = 0;
 	int max_frame_count = -1;
+	int compare_with_first = false;
 
 	unsigned int WINDOW_WIDTH = 640;
         unsigned int WINDOW_HEIGHT = 360;
@@ -144,6 +146,10 @@ int main (int argc, char **argv)
                                 printf("%s", optarg);
                         break;
 
+                case 'f':
+                        compare_with_first = true;
+                        break;
+
                 default:
                         usage(stderr, argv, dev_name, max_frame_count);
                         exit(EXIT_FAILURE);
@@ -161,6 +167,6 @@ int main (int argc, char **argv)
 
 	srandom((unsigned int)time(NULL));
 
-	mainloop(dev_name, max_frame_count, video_texture);
+	mainloop(dev_name, max_frame_count, compare_with_first, video_texture);
 	return 0;
 }

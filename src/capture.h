@@ -21,10 +21,10 @@
 #include "image-type.h"
 #include "block-matching-type.h"
 
-int mainloop(char *file_name, int max_frame_count, unsigned int video_texture);
+int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsigned int video_texture);
 void save_gray_frame(unsigned char *buf,int wrap,int xsize,int ysize, char *filename);
 void save_rgb_frame(unsigned char* buf, int wrap, int xsize, int ysize, char* filename);
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame,AVFrame *pFrameRGB,struct SwsContext *sws_ctx, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow);
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame,AVFrame *pFrameRGB,struct SwsContext *sws_ctx, int compare_with_first, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow);
 
 
 

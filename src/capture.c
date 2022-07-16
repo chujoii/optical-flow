@@ -80,7 +80,7 @@ Code:
 
 
 
-int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
+int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsigned int video_texture) {
 	extern int escape_status;
 	int result;
 
@@ -292,7 +292,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 		// if it's the video stream
 		if (pPacket->stream_index == video_stream_index) {
 			//printf("AVPacket->pts %ld\n", pPacket->pts);
-			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, video_texture, num_components, &flow);
+			response = decode_packet(pPacket, pCodecContext, pFrame, pFrameRGB, sws_ctx, compare_with_first, video_texture, num_components, &flow);
 
 			if (response < 0)
 				break;
@@ -315,7 +315,7 @@ int mainloop(char *file_name, int max_frame_count, unsigned int video_texture) {
 }
 
 
-int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
+int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFrame, AVFrame *pFrameRGB, struct SwsContext *sws_ctx, int compare_with_first, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
 {
 	extern int verbose;
 
@@ -363,7 +363,7 @@ int decode_packet(AVPacket *pPacket, AVCodecContext *pCodecContext, AVFrame *pFr
 			if (response <= 0) {
 				printf("Error: sws_scale status = %d\n", response);
 			}
-			process_image(pFrameRGB, pCodecContext->frame_number, verbose, video_texture, num_components, flow);
+			process_image(pFrameRGB, pCodecContext->frame_number, compare_with_first, verbose, video_texture, num_components, flow);
 			if (verbose & VERBOSE_IMAGE) {
 				char frame_filename[MAX_FNAME_LEN];
 				/*

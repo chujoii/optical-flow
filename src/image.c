@@ -241,7 +241,7 @@ int storeJpegImageFile(struct imgRawImage* lpImage, char* lpFilename) {
 
 
 
-void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
+void process_image(AVFrame *pFrameRGB, int frame_count, int compare_with_first, int verbose, unsigned int video_texture, int num_components, OPTICAL_FLOW* flow)
 {
 	extern struct imgRawImage* raw_image; // fixme: global variable
 	extern struct imgRawImage* gui_image; // fixme: global variable
@@ -304,13 +304,16 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int verbose, unsigned in
 		free(gui_image);
 	}
 
-	if (old_image != NULL) {
+	if (old_image != NULL && compare_with_first != true) {
 		free(old_image->lpData);
 		free(old_image);
 	}
 
-	old_image = raw_image;
-	old_image->lpData = raw_image->lpData;
+	if (compare_with_first == false ||
+	    (compare_with_first == true && frame_count == 1)) {
+		old_image = raw_image;
+		old_image->lpData = raw_image->lpData;
+	}
 
 	fflush(stderr);
 	fprintf(stderr, ".%s", (frame_count % 100 == 0)? "\n" : "");
