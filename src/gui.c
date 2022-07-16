@@ -439,7 +439,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 	(void)scancode; // suppress "unused parameter" warnings
 	(void)mods; // suppress "unused parameter" warnings
 
-	extern int verbose;
+	extern int hide_static_block;
 	extern int escape_status;
 	extern int verbose_type;
 
@@ -451,8 +451,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 		break;
 	case GLFW_KEY_SPACE:
 		if (action == GLFW_PRESS || action == GLFW_REPEAT) {
-			verbose |= VERBOSE_STEP_BY_STEP;
-			space_step = !space_step;
+			hide_static_block ^= 1;
 		}
 		break;
 	default:

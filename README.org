@@ -50,6 +50,11 @@ between the webcam and the texture:
 ./optical_flow -v 2 -d /dev/video0
 Or
 ./optical_flow -v 2 -d 'rtsp://user:password@192.168.100.101/Streaming/channels/101'
+Or if you have many stored video files
+find ../../../media/optical-flow -type f -regextype egrep -iregex '.*((avi|mpeg|mpg|mp4|webm|mkv))' -print0 | xargs -0 --max-args=1 ./optical_flow -v 2 -d
+
+
+press space for show only optical flow
 * History:
 Project created at 2022-04(Apr)-12
 

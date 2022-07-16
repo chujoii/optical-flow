@@ -17,6 +17,7 @@ struct imgRawImage* raw_image;
 struct imgRawImage* gui_image;
 struct imgRawImage* old_image;
 int verbose = VERBOSE_NO;
+int hide_static_block = false;
 GLFWwindow* window;
 unsigned int shaderProgram_video;
 unsigned int shaderProgram_widget;
