@@ -24,6 +24,7 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 				 int max_shift, int block_size);
 void block_matching_optimized_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
 				      OPTICAL_FLOW* flow);
+void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPTICAL_FLOW* flow);
 RGB_COLOR shift_to_color (RGB_COLOR source_color, COORD_2D shift, int max_shift);
 
 #endif /* BLOCK_MATCHING_H */
