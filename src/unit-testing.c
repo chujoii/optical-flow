@@ -43,8 +43,9 @@ Code:
 
 #define IMG_SIZE 12
 #define BLOCK_SIZE_TEST 4
-#define MAX_SHIFT_TEST 2
-#define FPS 25
+#define MAX_SHIFT_GLOBAL_TEST 2
+#define MAX_SHIFT_LOCAL_TEST 2
+#define FPS_TEST 25
 
 // fixme: global variables
 struct imgRawImage* raw_image;
@@ -134,7 +135,9 @@ int main ()
 	memset(image_empty, 0, IMG_SIZE*IMG_SIZE * sizeof(unsigned char));
 
 	OPTICAL_FLOW flow;
-	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST, MAX_SHIFT_TEST, NANOSECONDS_IN_SECOND / FPS, &flow);
+	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST,
+			     MAX_SHIFT_GLOBAL_TEST, MAX_SHIFT_LOCAL_TEST,
+			     NANOSECONDS_IN_SECOND / FPS_TEST, &flow);
 
 
 
@@ -152,7 +155,9 @@ int main ()
 	// comment "#define DEBUG" in top of file
 	raw_image->lpData = image_a1;
 	old_image->lpData = image_a0;
-	COORD_2D best_shift = find_block_correlation (old_image, raw_image, gui_image, block, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
+	COORD_2D best_shift = find_block_correlation (old_image, raw_image, gui_image,
+						      block, BLOCK_SIZE_TEST,
+						      (COORD_2D) {.x = 0, .y = 0}, MAX_SHIFT_LOCAL_TEST);
 
 	printf("\n\n.A\n");
 	print_image (old_image);
@@ -164,7 +169,7 @@ int main ()
 	
 
 
-	block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT_TEST, BLOCK_SIZE_TEST);
+	block_matching_full_images (old_image, raw_image, gui_image, &flow);
 	print_image (gui_image);
 
 	free(gui_image->lpData);

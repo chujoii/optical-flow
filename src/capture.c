@@ -282,7 +282,7 @@ int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsig
 	///////////////////////////////// end prepare to convert YCbCr to RGB format (YCbCr is often confused with the YUV) //////////////////////////////////////////
 
 	OPTICAL_FLOW flow;
-	init_block_matching (pFrameRGB->width, pFrameRGB->height, BLOCK_SIZE, MAX_SHIFT, NANOSECONDS_IN_SECOND / FPS, &flow);
+	init_block_matching (pFrameRGB->width, pFrameRGB->height, BLOCK_SIZE, MAX_SHIFT_GLOBAL, MAX_SHIFT_LOCAL, NANOSECONDS_IN_SECOND / FPS, &flow);
 
 	// fill the Packet with data from the Stream
 	// https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61

@@ -66,10 +66,11 @@ COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r)
 
 
 
-int init_block_matching (int image_width, int image_height, int block_size, int max_shift, long int nspf, OPTICAL_FLOW* flow)
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, long int nspf, OPTICAL_FLOW* flow)
 {
 	flow->block_size_in_pixel = block_size;
-	flow->max_shift = max_shift;
+	flow->max_shift_global = max_shift_global;
+	flow->max_shift_local = max_shift_local;
 	flow->nspf = nspf;
 
 	flow->width = get_block_numbers (image_width,  block_size);
@@ -212,7 +213,9 @@ static int cmp_double(const void * a, const void * b)
 /**
    Find block correlation with all possible shifts
 */
-COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image, COORD_2D block, int max_shift, int block_size)
+COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
+				 COORD_2D block, int block_size,
+				 COORD_2D shift_global, int max_shift_local)
 {
 	double result;
 	COORD_2D shift = {0, 0};
@@ -223,11 +226,11 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 	if (min_result < EPSILON) return best_shift;
 
-	HISTOGRAM_STORAGE histogram[SQUARE(max_shift * 2 + 1)];
+	HISTOGRAM_STORAGE histogram[SQUARE(max_shift_local * 2 + 1)];
 	int counter = 0;
 
-	for (int j = -max_shift; j <= max_shift; j++) {
-		for (int i = -max_shift; i <= max_shift; i++) {
+	for (int j = shift_global.y - max_shift_local; j <= shift_global.y + max_shift_local; j++) {
+		for (int i = shift_global.x - max_shift_local; i <= shift_global.x + max_shift_local; i++) {
 			shift.x = i; shift.y = j;
 			result = diff_block (old_image, new_image, gui_image, block, shift, block_size);
 
@@ -248,7 +251,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	//if ((median - min_result) / (max_result - median)  < THRESHOLD) return (COORD_2D) {0, 0};
 
 	int i = counter - 1;
-	double best_distance = sqrt(2*SQUARE(max_shift));
+	double best_distance = sqrt(SQUARE(histogram[i].shift.x) + SQUARE(histogram[i].shift.y));
 	double distance;
 
 	// some shift variants --- equal by "diff" value, so find shift variant with smallest distance to center
@@ -268,10 +271,10 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 
 
 void block_matching_full_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
-				 int max_shift, int block_size)
+				 OPTICAL_FLOW* flow)
 {
-	int horizontal_blocks_num = get_block_numbers (new_image->width,  block_size);
-	int vertical_blocks_num   = get_block_numbers (new_image->height, block_size);
+	int horizontal_blocks_num = get_block_numbers (new_image->width,  flow->block_size_in_pixel);
+	int vertical_blocks_num   = get_block_numbers (new_image->height, flow->block_size_in_pixel);
 
 	COORD_2D coord_shift;
 	COORD_2D block;
@@ -279,15 +282,19 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 	long long int coord_raw;
 
 	RGB_COLOR color_shift;
+	int max_shift = sqrt(2.0 * (double)SQUARE (flow->max_shift_global + flow->max_shift_local));
 
 	for (int j=0; j < vertical_blocks_num; j++) {
-		block.y = j * block_size;
+		block.y = j * flow->block_size_in_pixel;
 		for (int i=0; i < horizontal_blocks_num; i++) {
-			block.x = i * block_size;
-			coord_shift = find_block_correlation (old_image, new_image, gui_image, block, max_shift, block_size);
+			block.x = i * flow->block_size_in_pixel;
+			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
+			coord_shift = find_block_correlation (old_image, new_image, gui_image,
+							      block, flow->block_size_in_pixel,
+							      flow->array[raw_flow_coord].shift, flow->max_shift_local);
 
-			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + block_size); pixel.y++) {
-				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + block_size); pixel.x++) {
+			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
 					coord_raw = coord_to_raw_chunk(gui_image, pixel);
 					if (coord_raw > 0) {
 						RGB_COLOR source_color = {
@@ -329,7 +336,9 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			block.x = i * flow->block_size_in_pixel;
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
 			if (labs(flow->array[raw_flow_coord].shift.x) + labs(flow->array[raw_flow_coord].shift.y) > 0) {
-				coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
+				coord_shift = find_block_correlation (old_image, new_image, gui_image,
+								      block, flow->block_size_in_pixel,
+								      flow->array[raw_flow_coord].shift, flow->max_shift_local);
 				flow->array[raw_flow_coord].shift = coord_shift;
 				flow->array[raw_flow_coord].last_update = 0;
 			}
@@ -347,7 +356,9 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			block.x = i * flow->block_size_in_pixel;
 			block.y = j * flow->block_size_in_pixel;
 
-			coord_shift = find_block_correlation (old_image, new_image, gui_image, block, flow->max_shift, flow->block_size_in_pixel);
+			coord_shift = find_block_correlation (old_image, new_image, gui_image,
+							      block, flow->block_size_in_pixel,
+							      flow->array[raw_flow_coord].shift, flow->max_shift_local);
 			flow->array[raw_flow_coord].shift = coord_shift;
 			flow->array[raw_flow_coord].last_update = 0;
 		}
@@ -356,7 +367,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 		if (ts_current.tv_sec - ts_start.tv_sec == 0) {
 			time_duration = ts_current.tv_nsec - ts_start.tv_nsec;
 		} else { // fixme: if more than one seconds, then need add seconds diff
-			time_duration = ts_start.tv_nsec - ts_current.tv_nsec;
+			time_duration = (NANOSECONDS_IN_SECOND - ts_start.tv_nsec) + ts_current.tv_nsec;
 		}
 	} while (time_duration < flow->nspf);
 
@@ -381,6 +392,8 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 	long long int coord_raw;
 
 	RGB_COLOR color_shift;
+
+	int max_shift = sqrt(2.0 * (double)SQUARE (flow->max_shift_global + flow->max_shift_local));
 		
 	coord_shift = (COORD_2D) {.x=0, .y=0};
 	for (int j=0; j < vertical_blocks_num; j++) {
@@ -397,7 +410,7 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 							.r = new_image->lpData[coord_raw + R],
 							.g = new_image->lpData[coord_raw + G],
 							.b = new_image->lpData[coord_raw + B]};
-						color_shift = shift_to_color (source_color, coord_shift, flow->max_shift);
+						color_shift = shift_to_color (source_color, coord_shift, max_shift);
 						gui_image->lpData[coord_raw + R] = color_shift.r;
 						gui_image->lpData[coord_raw + G] = color_shift.g;
 						gui_image->lpData[coord_raw + B] = color_shift.b;
@@ -419,7 +432,7 @@ RGB_COLOR shift_to_color (RGB_COLOR source_color, COORD_2D shift, int max_shift)
 	// Given a color with hue H [0, 360], saturation S [0, 1], and lightness L [0, 1]
 	double hue = convert_radian_to_degree(angle_modulo(atan2(shift.y, shift.x)));
 	double saturation = sqrt((double)SQUARE(shift.x) + (double)SQUARE(shift.y)) / (double) max_shift;
-	double lightness = float_constrain(monochrome / 255.0, 0.0, 1.0);
+	double lightness = monochrome / 255.0;
 
 	double c = (1.0 - fabs(2.0*lightness - 1.0)) * saturation; // chroma
 	double h = hue / 60.0; // neighbour

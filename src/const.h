@@ -15,10 +15,11 @@
 #define THRESHOLD 2
 
 #define BLOCK_SIZE 8
-#define MAX_SHIFT 4
-#define FPS 15
+#define MAX_SHIFT_GLOBAL 8    // shift_global === previoush shift
+#define MAX_SHIFT_LOCAL 2     // shift_local === distance from shift_global for search similar
+#define FPS 30
 
-#define NANOSECONDS_IN_SECOND 1000000000
+#define NANOSECONDS_IN_SECOND 1000000000L
 #define SECONDS_IN_DEGREE 60.0
 
 enum verbose_level {
