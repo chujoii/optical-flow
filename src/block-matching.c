@@ -396,31 +396,57 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 	RGB_COLOR color_shift;
 
 	int max_shift = sqrt(2.0 * (double)SQUARE (flow->max_shift_global + flow->max_shift_local));
-		
+
 	coord_shift = (COORD_2D) {.x=0, .y=0};
 	for (int j=0; j < vertical_blocks_num; j++) {
 		block.y = j * flow->block_size_in_pixel;
 		for (int i=0; i < horizontal_blocks_num; i++) {
 			block.x = i * flow->block_size_in_pixel;
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-			coord_shift = flow->array[raw_flow_coord].shift;
-			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
-				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
-					coord_raw = coord_to_raw_chunk(gui_image, pixel);
-					if (coord_raw > 0) {
-						RGB_COLOR source_color = {
-							.r = new_image->lpData[coord_raw + R],
-							.g = new_image->lpData[coord_raw + G],
-							.b = new_image->lpData[coord_raw + B]};
-						if (hide_static_block == true &&
-						    labs(coord_shift.x) + labs(coord_shift.y) == 0) {
-							color_shift = (RGB_COLOR) {.r = 255, .g = 255, .b = 255};
-						} else {
-							color_shift = shift_to_color (source_color, coord_shift, max_shift);
+			if (raw_flow_coord >= 0) {
+				coord_shift = flow->array[raw_flow_coord].shift;
+
+				// color if most neighbour have shift
+				if (MIN_NEIGHBOURS > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
+					COORD_2D neighbour_shift = {.x = 0, .y = 0};
+					int neighbour_shift_counter = 0;
+					for (int neighbour_x = -1; neighbour_x <= 1; neighbour_x++) {
+						for (int neighbour_y = -1; neighbour_y <= 1; neighbour_y++) {
+							int neighbour_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i + neighbour_x, .y=j + neighbour_y});
+							if (neighbour_coord >= 0 &&
+							    (flow->array[neighbour_coord].shift.x != 0 ||
+							     flow->array[neighbour_coord].shift.y != 0)) {
+								neighbour_shift.x += flow->array[neighbour_coord].shift.x;
+								neighbour_shift.y += flow->array[neighbour_coord].shift.y;
+								neighbour_shift_counter++;
+							}
 						}
-						gui_image->lpData[coord_raw + R] = color_shift.r;
-						gui_image->lpData[coord_raw + G] = color_shift.g;
-						gui_image->lpData[coord_raw + B] = color_shift.b;
+					}
+					if (neighbour_shift_counter >= MIN_NEIGHBOURS) {
+						//printf(" <%d> ", neighbour_shift_counter);
+						coord_shift.x = neighbour_shift.x / neighbour_shift_counter;
+						coord_shift.y = neighbour_shift.y / neighbour_shift_counter;
+					}
+				}
+
+				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
+						coord_raw = coord_to_raw_chunk(gui_image, pixel);
+						if (coord_raw >= 0) {
+							RGB_COLOR source_color = {
+								.r = new_image->lpData[coord_raw + R],
+								.g = new_image->lpData[coord_raw + G],
+								.b = new_image->lpData[coord_raw + B]};
+							if (hide_static_block == true &&
+							    labs(coord_shift.x) + labs(coord_shift.y) == 0) {
+								color_shift = (RGB_COLOR) {.r = 255, .g = 255, .b = 255};
+							} else {
+								color_shift = shift_to_color (source_color, coord_shift, max_shift);
+							}
+							gui_image->lpData[coord_raw + R] = color_shift.r;
+							gui_image->lpData[coord_raw + G] = color_shift.g;
+							gui_image->lpData[coord_raw + B] = color_shift.b;
+						}
 					}
 				}
 			}

@@ -17,6 +17,7 @@
 #define BLOCK_SIZE 8
 #define MAX_SHIFT_GLOBAL 8    // shift_global === previoush shift
 #define MAX_SHIFT_LOCAL 2     // shift_local === distance from shift_global for search similar
+#define MIN_NEIGHBOURS 3
 #define FPS 30
 
 #define NANOSECONDS_IN_SECOND 1000000000L
