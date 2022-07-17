@@ -446,11 +446,10 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 								.r = new_image->lpData[coord_raw + R],
 								.g = new_image->lpData[coord_raw + G],
 								.b = new_image->lpData[coord_raw + B]};
+							color_shift = shift_to_color (source_color, coord_shift, max_shift);
 							if (hide_static_block == true &&
-							    labs(coord_shift.x) + labs(coord_shift.y) == 0) {
-								color_shift = (RGB_COLOR) {.r = 255, .g = 255, .b = 255};
-							} else {
-								color_shift = shift_to_color (source_color, coord_shift, max_shift);
+							    coord_shift.x == 0 && coord_shift.y == 0) {
+								color_shift.r = color_shift.g = color_shift.b = (color_shift.r>>2) + 255 - (255>>2);
 							}
 							gui_image->lpData[coord_raw + R] = color_shift.r;
 							gui_image->lpData[coord_raw + G] = color_shift.g;
