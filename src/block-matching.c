@@ -82,10 +82,12 @@ int init_block_matching (int image_width, int image_height, int block_size, int 
 	for (unsigned long int j = 0; j < flow->height; j++) {
 		for (unsigned long int i = 0; i < flow->width; i++) {
 			COORD_2DU coord = {.x=i, .y=j};
-			unsigned long int index = coord_to_raw_flow(flow, coord);
-			flow->array[index].last_update = 0;
-			flow->array[index].shift.x = 0;
-			flow->array[index].shift.y = 0;
+			long long int index = coord_to_raw_flow(flow, coord);
+			if (index >=0) {
+				flow->array[index].last_update = 0;
+				flow->array[index].shift.x = 0;
+				flow->array[index].shift.y = 0;
+			}
 		}
 	}
 	return 0;
@@ -104,11 +106,14 @@ void print_image (struct imgRawImage* image)
 {
 	for (unsigned int j = 0; j < image->height; j++) {
 		for (unsigned int i = 0; i < image->width; i++) {
-			int c = image->lpData[coord_to_raw_chunk(image, (COORD_2DU){i, j})];
-			if (c == 0) {
-				printf (" .");
-			} else {
-				printf("%2d", c);
+			long long int index = coord_to_raw_chunk(image, (COORD_2DU){i, j});
+			if (index >= 0) {
+				int c = image->lpData[index];
+				if (c == 0) {
+					printf (" .");
+				} else {
+					printf("%2d", c);
+				}
 			}
 		}
 		printf("\n");
@@ -289,22 +294,24 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 		for (int i=0; i < horizontal_blocks_num; i++) {
 			block.x = i * flow->block_size_in_pixel;
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-			coord_shift = find_block_correlation (old_image, new_image, gui_image,
-							      block, flow->block_size_in_pixel,
-							      flow->array[raw_flow_coord].shift, flow->max_shift_local);
+			if (raw_flow_coord >= 0) {
+				coord_shift = find_block_correlation (old_image, new_image, gui_image,
+								      block, flow->block_size_in_pixel,
+								      flow->array[raw_flow_coord].shift, flow->max_shift_local);
 
-			for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
-				for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
-					coord_raw = coord_to_raw_chunk(gui_image, pixel);
-					if (coord_raw > 0) {
-						RGB_COLOR source_color = {
-							.r = new_image->lpData[coord_raw + R],
-							.g = new_image->lpData[coord_raw + G],
-							.b = new_image->lpData[coord_raw + B]};
-						color_shift = shift_to_color (source_color, coord_shift, max_shift);
-						gui_image->lpData[coord_raw + R] = color_shift.r;
-						gui_image->lpData[coord_raw + G] = color_shift.g;
-						gui_image->lpData[coord_raw + B] = color_shift.b;
+				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
+					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
+						coord_raw = coord_to_raw_chunk(gui_image, pixel);
+						if (coord_raw >= 0) {
+							RGB_COLOR source_color = {
+								.r = new_image->lpData[coord_raw + R],
+								.g = new_image->lpData[coord_raw + G],
+								.b = new_image->lpData[coord_raw + B]};
+							color_shift = shift_to_color (source_color, coord_shift, max_shift);
+							gui_image->lpData[coord_raw + R] = color_shift.r;
+							gui_image->lpData[coord_raw + G] = color_shift.g;
+							gui_image->lpData[coord_raw + B] = color_shift.b;
+						}
 					}
 				}
 			}
@@ -335,7 +342,8 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 		for (int i=0; i < horizontal_blocks_num; i++) {
 			block.x = i * flow->block_size_in_pixel;
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-			if (labs(flow->array[raw_flow_coord].shift.x) + labs(flow->array[raw_flow_coord].shift.y) > 0) {
+			if (raw_flow_coord >= 0 &&
+			    !(flow->array[raw_flow_coord].shift.x == 0 && flow->array[raw_flow_coord].shift.y == 0)) {
 				coord_shift = find_block_correlation (old_image, new_image, gui_image,
 								      block, flow->block_size_in_pixel,
 								      flow->array[raw_flow_coord].shift, flow->max_shift_local);
@@ -352,7 +360,8 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 		int i = rnd(0, horizontal_blocks_num - 1);
 		int j = rnd(0, vertical_blocks_num - 1);
 		int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-		if (flow->array[raw_flow_coord].last_update != 0) {
+		if (raw_flow_coord >= 0 &&
+		    flow->array[raw_flow_coord].last_update != 0) {
 			block.x = i * flow->block_size_in_pixel;
 			block.y = j * flow->block_size_in_pixel;
 
