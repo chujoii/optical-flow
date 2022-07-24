@@ -255,15 +255,14 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int compare_with_first, 
 	raw_image->dwBufferBytes = pFrameRGB->width * pFrameRGB->height * num_components;
 	raw_image->lpData = (unsigned char*)malloc(sizeof(unsigned char) * (raw_image->dwBufferBytes));
 
-	// memcpy not work because uint8_t != unsigned char:
-	// memcpy(lpData, pFrameRGB->data, sizeof(unsigned char) * raw_image->dwBufferBytes);
+	// memcpy(raw_image->lpData, pFrameRGB->data[0], sizeof(unsigned char) * raw_image->dwBufferBytes);
 	//
 	// also need flip image by horizontal axis:
-	for (int j=0; j < pFrameRGB->height; j++) {
-		for (int i=0; i < pFrameRGB->linesize[0]; i++) {
-			raw_image->lpData         [i + (pFrameRGB->height - j - 1) * pFrameRGB->linesize[0]] =
-				pFrameRGB->data[0][i +                      j      * pFrameRGB->linesize[0]];
-		}
+	int rgb_linesize = pFrameRGB->linesize[0];
+	for (unsigned long int j=0; j < raw_image->dwBufferBytes; j += rgb_linesize) {
+		int image_base_index = raw_image->dwBufferBytes - rgb_linesize - j;
+		int rgb_base_index   = j;
+		memcpy(&(raw_image->lpData[image_base_index]), &(pFrameRGB->data[0][rgb_base_index]), sizeof(unsigned char) * rgb_linesize);
 	}
 
 	if (verbose != VERBOSE_NO) {
