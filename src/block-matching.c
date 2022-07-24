@@ -446,14 +446,20 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 								.r = new_image->lpData[coord_raw + R],
 								.g = new_image->lpData[coord_raw + G],
 								.b = new_image->lpData[coord_raw + B]};
-							color_shift = shift_to_color (source_color, coord_shift, max_shift);
-							if (hide_static_block == true &&
-							    coord_shift.x == 0 && coord_shift.y == 0) {
-								color_shift.r = color_shift.g = color_shift.b = (color_shift.r>>2) + 255 - (255>>2);
+							if (coord_shift.x == 0 && coord_shift.y == 0) {
+								unsigned char mono = monochrome(source_color);
+								if (hide_static_block == true) {
+									mono = (mono>>2) + 255 - (255>>2);
+								}
+								gui_image->lpData[coord_raw + R] = mono;
+								gui_image->lpData[coord_raw + G] = mono;
+								gui_image->lpData[coord_raw + B] = mono;
+							} else {
+								color_shift = shift_to_color (source_color, coord_shift, max_shift);
+								gui_image->lpData[coord_raw + R] = color_shift.r;
+								gui_image->lpData[coord_raw + G] = color_shift.g;
+								gui_image->lpData[coord_raw + B] = color_shift.b;
 							}
-							gui_image->lpData[coord_raw + R] = color_shift.r;
-							gui_image->lpData[coord_raw + G] = color_shift.g;
-							gui_image->lpData[coord_raw + B] = color_shift.b;
 						}
 					}
 				}
@@ -464,16 +470,22 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 
 
 
+unsigned char monochrome (RGB_COLOR source_color)
+{
+	return (0.2125 * (double)source_color.r) + (0.7154 * (double)source_color.g) + (0.0721 * (double)source_color.b);
+}
+
+
 RGB_COLOR shift_to_color (RGB_COLOR source_color, COORD_2D shift, int max_shift)
 {
-	double monochrome = (0.2125 * source_color.r) + (0.7154 * source_color.g) + (0.0721 * source_color.b);
+	double mono = monochrome(source_color);
 
 	// HSL (for hue, saturation, lightness) and HSV (for hue, saturation, value; also known as HSB, for hue, saturation, brightness)
 	// convert HSL to RGB
 	// Given a color with hue H [0, 360], saturation S [0, 1], and lightness L [0, 1]
 	double hue = convert_radian_to_degree(angle_modulo(atan2(shift.y, shift.x)));
 	double saturation = sqrt((double)SQUARE(shift.x) + (double)SQUARE(shift.y)) / (double) max_shift;
-	double lightness = monochrome / 255.0;
+	double lightness = mono / 255.0;
 
 	double c = (1.0 - fabs(2.0*lightness - 1.0)) * saturation; // chroma
 	double h = hue / 60.0; // neighbour

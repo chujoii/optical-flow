@@ -18,6 +18,7 @@ CC = gcc
 # also recommended for debug: -Og -ggdb
 
 CFLAGS = -Wall -Wextra -pedantic -O2 -pipe -D_GNU_SOURCE -g
+PROFILER = -pg
 MATH = -lgsl -lm
 THREAD = -lpthread
 GUI = -lglfw -lGL -lX11 -lXrandr -lXi -lXinerama -ldl
@@ -41,7 +42,7 @@ HEADERS = *.h
 
 # create object file
 %.o: %.c $(HEADERS)
-	$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) $(PROFILER) -c $<
 
 # quotate all GLSL files
 glsl :
@@ -49,11 +50,15 @@ glsl :
 
 OPTICAL_FLOW_SRC=main.o capture.o image.o gui.o block-matching.o util.o
 optical_flow : glsl $(OPTICAL_FLOW_SRC)
-	$(CC) $(CFLAGS) $(OPTICAL_FLOW_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
+	$(CC) $(CFLAGS) $(PROFILER) $(OPTICAL_FLOW_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
+	echo for profile run ./optical_flow ...
+	echo gprof -b optical_flow gmon.out
 
 UNIT_TESTING_SRC=unit-testing.o block-matching.o image.o gui.o util.o
 unit_testing : $(UNIT_TESTING_SRC)
-	$(CC) $(CFLAGS) $(UNIT_TESTING_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
+	$(CC) $(CFLAGS) $(PROFILER) $(UNIT_TESTING_SRC) $(FFMPEG) $(MATH) $(THREAD) $(GUI) $(JPEG)  -o $@
+	echo for profile run ./unit_testing ...
+	echo gprof -b unit_testing gmon.out
 
 debug :
 	# Cppcheck for a static code analysis

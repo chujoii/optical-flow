@@ -273,7 +273,7 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int compare_with_first, 
 		gui_image->height        = raw_image->height;
 		gui_image->dwBufferBytes = raw_image->dwBufferBytes;
 		gui_image->lpData = (unsigned char*)malloc(sizeof(unsigned char) * (gui_image->dwBufferBytes));
-		memcpy(gui_image->lpData, raw_image->lpData, sizeof(unsigned char) * gui_image->dwBufferBytes);
+		//memcpy(gui_image->lpData, raw_image->lpData, sizeof(unsigned char) * gui_image->dwBufferBytes);
 	}
 
 	if (old_image != NULL) {
