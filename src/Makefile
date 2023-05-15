@@ -65,7 +65,8 @@ debug :
 	cppcheck --enable=all --inconclusive --std=posix main.c capture.c image.c gui.c util.c *.h
 	# Valgrind for memory debugging, memory leak detection, and profiling
 	rm -f valgrind.log
-	valgrind --tool=memcheck --leak-check=yes --track-origins=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./optical_flow -f w -z -d '/dev/video0' -c 1590,598-1536,643-50 -b 1200,400 -v 2
+	valgrind --tool=memcheck --leak-check=yes --track-origins=yes --leak-check=full --show-leak-kinds=all --log-file=valgrind.log ./optical_flow -d '/dev/video0' -v 2
+	echo gprof -b optical_flow gmon.out | less
 
 # doxygen
 doc :

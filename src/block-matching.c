@@ -230,14 +230,16 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	double result;
 	COORD_2D shift = {0, 0};
 
+	int counter = 0;
 	COORD_2D best_shift = shift;
 	double min_result = diff_block (old_image, new_image, gui_image, block, shift, block_size);
-	double max_result = min_result;
+	HISTOGRAM_STORAGE histogram[SQUARE(max_shift_local * 2 + 2)];
+	histogram[counter].diff = min_result;
+	histogram[counter].shift.x = 0;
+	histogram[counter].shift.y = 0;
+	counter++;
 
 	if (min_result < EPSILON) return best_shift;
-
-	HISTOGRAM_STORAGE histogram[SQUARE(max_shift_local * 2 + 1)];
-	int counter = 0;
 
 	for (int j = shift_global.y - max_shift_local; j <= shift_global.y + max_shift_local; j++) {
 		for (int i = shift_global.x - max_shift_local; i <= shift_global.x + max_shift_local; i++) {
@@ -254,11 +256,9 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	qsort(histogram, counter, sizeof(HISTOGRAM_STORAGE), cmp_double); // h[0] = max; h[counter-1] = min
 	double median = histogram[counter/2].diff;
 	min_result = histogram[counter - 1].diff;
-	max_result = histogram[0].diff;
 	best_shift = histogram[counter - 1].shift;
 
 	if (median - min_result < THRESHOLD) return (COORD_2D) {0, 0};
-	//if ((median - min_result) / (max_result - median)  < THRESHOLD) return (COORD_2D) {0, 0};
 
 	int i = counter - 1;
 	double best_distance = sqrt(SQUARE(histogram[i].shift.x) + SQUARE(histogram[i].shift.y));
@@ -360,7 +360,8 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 
 
 	// process random block
-	int time_duration;
+	long int time_duration;
+	int counter = 0;
 	do {
 		int i = rnd(0, horizontal_blocks_num - 1);
 		int j = rnd(0, vertical_blocks_num - 1);
@@ -375,6 +376,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 							      flow->array[raw_flow_coord].shift, flow->max_shift_local);
 			flow->array[raw_flow_coord].shift = coord_shift;
 			flow->array[raw_flow_coord].last_update = 0;
+			counter++;
 		}
 
 		clock_gettime(CLOCK_MONOTONIC, &ts_current);
@@ -384,6 +386,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			time_duration = (NANOSECONDS_IN_SECOND - ts_start.tv_nsec) + ts_current.tv_nsec;
 		}
 	} while (time_duration < flow->nspf);
+	printf(" %d ", counter);
 
 
 	for (unsigned long int i = 0; i < flow->array_size; i++) {
