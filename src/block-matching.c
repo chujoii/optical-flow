@@ -176,18 +176,23 @@ double diff_block (struct imgRawImage* old_image, struct imgRawImage* new_image,
 	for (ny = 0; ny < block_size; ny++) {
 		coord_2d_old.y = block.y + ny;
 		coord_2d_new.y = block.y + ny + shift.y;
-		for (nx = 0; nx < block_size; nx++) {
-			coord_2d_old.x = block.x + nx;
-			coord_2d_new.x = block.x + nx + shift.x;
 
-			if (coord_2d_old.x >= 0 && coord_2d_old.y >= 0 &&
-			    coord_2d_new.x >= 0 && coord_2d_new.y >= 0) {
-				COORD_2DU coord_2du_old = {coord_2d_old.x, coord_2d_old.y};
-				COORD_2DU coord_2du_new = {coord_2d_new.x, coord_2d_new.y};
-				coord_raw_old = coord_to_raw_chunk(old_image, coord_2du_old);
-				coord_raw_new = coord_to_raw_chunk(new_image, coord_2du_new);
+		nx = 0;
+		coord_2d_old.x = block.x + nx;
+		coord_2d_new.x = block.x + nx + shift.x;
 
-				if (coord_raw_old >= 0 && coord_raw_new >= 0) {
+		COORD_2DU coord_2du_old = {coord_2d_old.x, coord_2d_old.y};
+		COORD_2DU coord_2du_new = {coord_2d_new.x, coord_2d_new.y};
+		coord_raw_old = coord_to_raw_chunk(old_image, coord_2du_old);
+		coord_raw_new = coord_to_raw_chunk(new_image, coord_2du_new);
+		if (coord_raw_old >= 0 && coord_raw_new >= 0) {
+
+
+			for (nx = 0; nx < block_size; nx++) {
+				coord_raw_old += nx * old_image->numComponents;
+				coord_raw_new += nx * old_image->numComponents;
+				if (coord_raw_old <= (long long int)old_image->dwBufferBytes &&
+				    coord_raw_new <= (long long int)new_image->dwBufferBytes) {
 					for (unsigned int color = 0; color < new_image->numComponents; color++) {
 #ifdef DEBUG
 						gui_image->lpData[coord_raw_old + color] += 20;
