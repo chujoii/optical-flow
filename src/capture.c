@@ -287,6 +287,7 @@ int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsig
 	// fill the Packet with data from the Stream
 	// https://ffmpeg.org/doxygen/trunk/group__lavf__decoding.html#ga4fdb3084415a82e3810de6ee60e46a61
 	int ret;
+	int frame_counter = 0;
 	while ((ret = av_read_frame(pFormatContext, pPacket)) >= 0 &&
 	       max_frame_count != 0 && escape_status == false) { // max_frame_count == -1 infinity; > 0 limited frame number; == 0 exit
 		// if it's the video stream
@@ -299,7 +300,9 @@ int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsig
 		}
 		// https://ffmpeg.org/doxygen/trunk/group__lavc__packet.html#ga63d5a489b419bd5d45cfd09091cbcbc2
 		av_packet_unref(pPacket);
+		printf(" %d=", frame_counter);
 		if (max_frame_count > 0) max_frame_count--;
+		frame_counter++;
 	}
 
 	printf("releasing all the resources\n");

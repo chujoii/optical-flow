@@ -78,18 +78,12 @@ int init_block_matching (int image_width, int image_height, int block_size, int 
 	flow->array_size = flow->width * flow->height;
 
 	flow->array = (BLK*) malloc(sizeof(BLK) * flow->array_size);
-
-	for (unsigned long int j = 0; j < flow->height; j++) {
-		for (unsigned long int i = 0; i < flow->width; i++) {
-			COORD_2DU coord = {.x=i, .y=j};
-			long long int index = coord_to_raw_flow(flow, coord);
-			if (index >=0) {
-				flow->array[index].last_update = 0;
-				flow->array[index].shift.x = 0;
-				flow->array[index].shift.y = 0;
-			}
-		}
+	for (unsigned long int i = 0; i < flow->array_size; i++) {
+		flow->array[i].last_update = JUST_UPDATED;
+		flow->array[i].shift.x = 0;
+		flow->array[i].shift.y = 0;
 	}
+
 	return 0;
 }
 
@@ -330,6 +324,8 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 void block_matching_optimized_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
 				      OPTICAL_FLOW* flow)
 {
+	int counter = 0;
+
 	int horizontal_blocks_num = flow->width;
 	int vertical_blocks_num   = flow->height;
 
@@ -341,41 +337,91 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
         clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
 
+	/*
+		printf("\n\n\nh=%d\n", horizontal_blocks_num);
+	for (unsigned long int i = 0; i < flow->array_size; i++) {
+		printf("%d ", flow->array[i].last_update);
+		if (i%horizontal_blocks_num == 0) printf("\n");
+	}
+	*/
+
+
+
+
+
 	// find in previous success blocks
+	for (unsigned long int raw_flow_coord = 0; raw_flow_coord < flow->array_size; raw_flow_coord++) {
+		if ((flow->array[raw_flow_coord].last_update == UPDATED_IN_PREVIOUS_ITERATION &&
+		     !(flow->array[raw_flow_coord].shift.x == 0 && flow->array[raw_flow_coord].shift.y == 0)) ||
+		     flow->array[raw_flow_coord].last_update > LONG_TIME_WITHOUT_UPDATE) { // update those that have not been updated for a long time
+			    coord_shift = find_block_correlation (old_image, new_image, gui_image,
+								  block, flow->block_size_in_pixel,
+								  flow->array[raw_flow_coord].shift, flow->max_shift_local);
+			    flow->array[raw_flow_coord].shift = coord_shift;
+			    flow->array[raw_flow_coord].last_update = JUST_UPDATED;
+			    counter++;
+		}
+	}
+
+
+
 	for (int j=0; j < vertical_blocks_num; j++) {
 		block.y = j * flow->block_size_in_pixel;
 		for (int i=0; i < horizontal_blocks_num; i++) {
 			block.x = i * flow->block_size_in_pixel;
 			int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
-			if (raw_flow_coord >= 0 &&
-			    !(flow->array[raw_flow_coord].shift.x == 0 && flow->array[raw_flow_coord].shift.y == 0)) {
-				coord_shift = find_block_correlation (old_image, new_image, gui_image,
-								      block, flow->block_size_in_pixel,
-								      flow->array[raw_flow_coord].shift, flow->max_shift_local);
-				flow->array[raw_flow_coord].shift = coord_shift;
-				flow->array[raw_flow_coord].last_update = 0;
+			if (raw_flow_coord >= 0) {
+				coord_shift = flow->array[raw_flow_coord].shift;
+
+				// color if most neighbour have shift
+				if (MIN_NEIGHBOURS > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
+					COORD_2D neighbour_shift = {.x = 0, .y = 0};
+					int neighbour_shift_counter = 0;
+					for (int neighbour_x = -1; neighbour_x <= 1; neighbour_x++) {
+						for (int neighbour_y = -1; neighbour_y <= 1; neighbour_y++) {
+							int neighbour_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i + neighbour_x, .y=j + neighbour_y});
+							if (neighbour_coord >= 0 &&
+							    flow->array[neighbour_coord].last_update != PAINTED_BY_NEIGHBOR &&
+							    (flow->array[neighbour_coord].shift.x != 0 ||
+							     flow->array[neighbour_coord].shift.y != 0)) {
+								neighbour_shift.x += flow->array[neighbour_coord].shift.x;
+								neighbour_shift.y += flow->array[neighbour_coord].shift.y;
+								neighbour_shift_counter++;
+							}
+						}
+					}
+					if (neighbour_shift_counter >= MIN_NEIGHBOURS) {
+						//printf(" <%d> ", neighbour_shift_counter);
+						coord_shift.x = neighbour_shift.x / neighbour_shift_counter;
+						coord_shift.y = neighbour_shift.y / neighbour_shift_counter;
+
+						flow->array[raw_flow_coord].shift = coord_shift;
+						flow->array[raw_flow_coord].last_update = PAINTED_BY_NEIGHBOR;
+					}
+				}
 			}
 		}
 	}
 
+	printf("%d:", counter);
 
 	// process random block
 	long int time_duration;
-	int counter = 0;
+	counter = 0;
 	do {
 		int i = rnd(0, horizontal_blocks_num - 1);
 		int j = rnd(0, vertical_blocks_num - 1);
 		int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
 		if (raw_flow_coord >= 0 &&
-		    flow->array[raw_flow_coord].last_update != 0) {
+		    flow->array[raw_flow_coord].last_update != JUST_UPDATED) {
 			block.x = i * flow->block_size_in_pixel;
 			block.y = j * flow->block_size_in_pixel;
 
 			coord_shift = find_block_correlation (old_image, new_image, gui_image,
 							      block, flow->block_size_in_pixel,
-							      flow->array[raw_flow_coord].shift, flow->max_shift_local);
+							      flow->array[raw_flow_coord].shift, flow->max_shift_local); // generate a lot of trivial: shift(x,y) === 0
 			flow->array[raw_flow_coord].shift = coord_shift;
-			flow->array[raw_flow_coord].last_update = 0;
+			flow->array[raw_flow_coord].last_update = JUST_UPDATED;
 			counter++;
 		}
 
@@ -386,12 +432,56 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			time_duration = (NANOSECONDS_IN_SECOND - ts_start.tv_nsec) + ts_current.tv_nsec;
 		}
 	} while (time_duration < flow->nspf);
-	printf(" %d ", counter);
+	printf("%d ", counter);
 
+	/*
+		printf("\n\n\nh=%d\n", horizontal_blocks_num);
+	for (unsigned long int i = 0; i < flow->array_size; i++) {
+		printf("%d ", flow->array[i].last_update);
+		if (i%horizontal_blocks_num == 0) printf("\n");
+	}
+	*/
+
+
+/*
+	// neighbour
+	for (unsigned long int j = 1; j < flow->height -1; j++) {
+		for (unsigned long int i = 1; i < flow->width-1; i++) {
+			COORD_2DU coord = {.x=i, .y=j};
+			long long int index = coord_to_raw_flow(flow, coord);
+
+
+			COORD_2D coord_shift = flow->array[raw_flow_coord].shift;
+			// color if most neighbour have shift
+			if (MIN_NEIGHBOURS > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
+				COORD_2D neighbour_shift = {.x = 0, .y = 0};
+				int neighbour_shift_counter = 0;
+				for (int neighbour_x = -1; neighbour_x <= 1; neighbour_x++) {
+					for (int neighbour_y = -1; neighbour_y <= 1; neighbour_y++) {
+						int neighbour_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i + neighbour_x, .y=j + neighbour_y});
+						if (neighbour_coord >= 0 &&
+						    (flow->array[neighbour_coord].shift.x != 0 ||
+						     flow->array[neighbour_coord].shift.y != 0)) {
+							neighbour_shift.x += flow->array[neighbour_coord].shift.x;
+							neighbour_shift.y += flow->array[neighbour_coord].shift.y;
+							neighbour_shift_counter++;
+						}
+					}
+				}
+				if (neighbour_shift_counter >= MIN_NEIGHBOURS) {
+					coord_shift.x = neighbour_shift.x / neighbour_shift_counter;
+					coord_shift.y = neighbour_shift.y / neighbour_shift_counter;
+				}
+			}
+		}
+	}
+*/
 
 	for (unsigned long int i = 0; i < flow->array_size; i++) {
 		flow->array[i].last_update += 1;
 	}
+
+
 
 	colorize(new_image, gui_image, flow);
 }
@@ -423,6 +513,7 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 			if (raw_flow_coord >= 0) {
 				coord_shift = flow->array[raw_flow_coord].shift;
 
+				/*
 				// color if most neighbour have shift
 				if (MIN_NEIGHBOURS > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
 					COORD_2D neighbour_shift = {.x = 0, .y = 0};
@@ -431,6 +522,7 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 						for (int neighbour_y = -1; neighbour_y <= 1; neighbour_y++) {
 							int neighbour_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i + neighbour_x, .y=j + neighbour_y});
 							if (neighbour_coord >= 0 &&
+							    flow->array[neighbour_coord].last_update != PAINTED_BY_NEIGHBOR &&
 							    (flow->array[neighbour_coord].shift.x != 0 ||
 							     flow->array[neighbour_coord].shift.y != 0)) {
 								neighbour_shift.x += flow->array[neighbour_coord].shift.x;
@@ -443,8 +535,12 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 						//printf(" <%d> ", neighbour_shift_counter);
 						coord_shift.x = neighbour_shift.x / neighbour_shift_counter;
 						coord_shift.y = neighbour_shift.y / neighbour_shift_counter;
+
+						flow->array[raw_flow_coord].shift = coord_shift;
+						flow->array[raw_flow_coord].last_update = PAINTED_BY_NEIGHBOR;
 					}
 				}
+				*/
 
 				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
 					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
@@ -474,6 +570,39 @@ void colorize (struct imgRawImage* new_image, struct imgRawImage* gui_image, OPT
 			}
 		}
 	}
+
+	/*
+	// not faster than code above
+	int raw_flow_coord = 0;
+	int raw_counter = 0;
+	for (long unsigned int coord_raw = 0; coord_raw < gui_image->dwBufferBytes; coord_raw += gui_image->numComponents) {
+		RGB_COLOR source_color = {
+			.r = new_image->lpData[coord_raw + R],
+			.g = new_image->lpData[coord_raw + G],
+			.b = new_image->lpData[coord_raw + B]};
+
+		struct coord_2Du image_coord = raw_chunk_to_coord(gui_image, coord_raw);
+		image_coord.x /= flow->block_size_in_pixel;
+		image_coord.y /= flow->block_size_in_pixel;
+		long long int raw_flow_coord = coord_to_raw_flow(flow, image_coord);
+
+		coord_shift = flow->array[raw_flow_coord].shift;
+		if (coord_shift.x == 0 && coord_shift.y == 0) {
+			unsigned char mono = monochrome(source_color);
+			if (hide_static_block == true) {
+				mono = (mono>>2) + 255 - (255>>2);
+			}
+			gui_image->lpData[coord_raw + R] = mono;
+			gui_image->lpData[coord_raw + G] = mono;
+			gui_image->lpData[coord_raw + B] = mono;
+		} else {
+			color_shift = shift_to_color (source_color, coord_shift, max_shift);
+			gui_image->lpData[coord_raw + R] = color_shift.r;
+			gui_image->lpData[coord_raw + G] = color_shift.g;
+			gui_image->lpData[coord_raw + B] = color_shift.b;
+		}
+	}
+	*/
 }
 
 

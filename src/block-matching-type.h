@@ -15,7 +15,7 @@
 typedef struct blk {
 	COORD_2D shift;
 	double diff;
-	int last_update;
+	int last_update; // 0:  recently updated;        >0 (1, 2, 3, ...): updated in previous iteration;
 } BLK;
 
 typedef struct optical_flow {

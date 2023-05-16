@@ -19,6 +19,10 @@
 #define MAX_SHIFT_LOCAL 2     // shift_local === distance from shift_global for search similar
 #define MIN_NEIGHBOURS 3
 #define FPS 30
+#define JUST_UPDATED 0
+#define UPDATED_IN_PREVIOUS_ITERATION 1
+#define LONG_TIME_WITHOUT_UPDATE 30
+#define PAINTED_BY_NEIGHBOR 40
 
 #define NANOSECONDS_IN_SECOND 1000000000L
 #define SECONDS_IN_DEGREE 60.0
