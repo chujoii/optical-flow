@@ -13,6 +13,8 @@
 #include "image-type.h"
 #include "block-matching-type.h"
 
+long long int coord_to_raw_flow(OPTICAL_FLOW * flow, COORD_2DU coord);
+COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r);
 void print_image (struct imgRawImage* image);
 int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, long int nspf, OPTICAL_FLOW* flow);
 void free_block_matching (OPTICAL_FLOW* flow);
