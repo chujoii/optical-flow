@@ -66,12 +66,18 @@ COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r)
 
 
 
-int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, long int nspf, OPTICAL_FLOW* flow)
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, long int nspf, double epsilon, double histogram_epsilon, double threshold, int min_neighbours, int long_time_without_update, int painted_by_neighbor, OPTICAL_FLOW* flow)
 {
 	flow->block_size_in_pixel = block_size;
 	flow->max_shift_global = max_shift_global;
 	flow->max_shift_local = max_shift_local;
 	flow->nspf = nspf;
+	flow->epsilon = epsilon;
+	flow->histogram_epsilon = histogram_epsilon;
+	flow->threshold = threshold;
+	flow->min_neighbours = min_neighbours;
+	flow->long_time_without_update = long_time_without_update;
+	flow->painted_by_neighbor = painted_by_neighbor;
 
 	flow->width = get_block_numbers (image_width,  block_size);
 	flow->height = get_block_numbers (image_height, block_size);
@@ -79,7 +85,7 @@ int init_block_matching (int image_width, int image_height, int block_size, int 
 
 	flow->array = (BLK*) malloc(sizeof(BLK) * flow->array_size);
 	for (unsigned long int i = 0; i < flow->array_size; i++) {
-		flow->array[i].last_update = JUST_UPDATED;
+		flow->array[i].last_update = OPTICAL_FLOW_JUST_UPDATED;
 		flow->array[i].shift.x = 0;
 		flow->array[i].shift.y = 0;
 	}
@@ -219,7 +225,8 @@ static int cmp_double(const void * a, const void * b)
 */
 COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
 				 COORD_2D block, int block_size,
-				 COORD_2D shift_global, int max_shift_local)
+				 COORD_2D shift_global, int max_shift_local,
+				 OPTICAL_FLOW* flow)
 {
 	double result;
 	COORD_2D shift = {0, 0};
@@ -233,7 +240,7 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	histogram[counter].shift.y = 0;
 	counter++;
 
-	if (min_result < EPSILON) return best_shift;
+	if (min_result < flow->epsilon) return best_shift;
 
 	for (int j = shift_global.y - max_shift_local; j <= shift_global.y + max_shift_local; j++) {
 		for (int i = shift_global.x - max_shift_local; i <= shift_global.x + max_shift_local; i++) {
@@ -252,14 +259,14 @@ COORD_2D find_block_correlation (struct imgRawImage* old_image, struct imgRawIma
 	min_result = histogram[counter - 1].diff;
 	best_shift = histogram[counter - 1].shift;
 
-	if (median - min_result < THRESHOLD) return (COORD_2D) {0, 0};
+	if (median - min_result < flow->threshold) return (COORD_2D) {0, 0};
 
 	int i = counter - 1;
 	double best_distance = sqrt(SQUARE(histogram[i].shift.x) + SQUARE(histogram[i].shift.y));
 	double distance;
 
 	// some shift variants --- equal by "diff" value, so find shift variant with smallest distance to center
-	while (i > 0 && histogram[i].diff - min_result < HISTOGRAM_EPSILON) {
+	while (i > 0 && histogram[i].diff - min_result < flow->histogram_epsilon) {
 		distance = sqrt(SQUARE(histogram[i].shift.x) + SQUARE(histogram[i].shift.y));
 		if (distance < best_distance) {
 			best_distance = distance;
@@ -296,7 +303,7 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 			if (raw_flow_coord >= 0) {
 				coord_shift = find_block_correlation (old_image, new_image, gui_image,
 								      block, flow->block_size_in_pixel,
-								      flow->array[raw_flow_coord].shift, flow->max_shift_local);
+								      flow->array[raw_flow_coord].shift, flow->max_shift_local, flow);
 
 				for(pixel.y = block.y; pixel.y < (unsigned long int)(block.y + flow->block_size_in_pixel); pixel.y++) {
 					for(pixel.x = block.x; pixel.x < (unsigned long int)(block.x + flow->block_size_in_pixel); pixel.x++) {
@@ -351,14 +358,14 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 
 	// find in previous success blocks
 	for (unsigned long int raw_flow_coord = 0; raw_flow_coord < flow->array_size; raw_flow_coord++) {
-		if ((flow->array[raw_flow_coord].last_update == UPDATED_IN_PREVIOUS_ITERATION &&
+		if ((flow->array[raw_flow_coord].last_update == OPTICAL_FLOW_UPDATED_IN_PREVIOUS_ITERATION &&
 		     !(flow->array[raw_flow_coord].shift.x == 0 && flow->array[raw_flow_coord].shift.y == 0)) ||
-		     flow->array[raw_flow_coord].last_update > LONG_TIME_WITHOUT_UPDATE) { // update those that have not been updated for a long time
+		     flow->array[raw_flow_coord].last_update > OPTICAL_FLOW_LONG_TIME_WITHOUT_UPDATE) { // update those that have not been updated for a long time
 			    coord_shift = find_block_correlation (old_image, new_image, gui_image,
 								  block, flow->block_size_in_pixel,
-								  flow->array[raw_flow_coord].shift, flow->max_shift_local);
+								  flow->array[raw_flow_coord].shift, flow->max_shift_local, flow);
 			    flow->array[raw_flow_coord].shift = coord_shift;
-			    flow->array[raw_flow_coord].last_update = JUST_UPDATED;
+			    flow->array[raw_flow_coord].last_update = OPTICAL_FLOW_JUST_UPDATED;
 			    counter++;
 		}
 	}
@@ -374,14 +381,14 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 				coord_shift = flow->array[raw_flow_coord].shift;
 
 				// color if most neighbour have shift
-				if (MIN_NEIGHBOURS > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
+				if (flow->min_neighbours > 0 && coord_shift.x == 0 && coord_shift.y == 0) {
 					COORD_2D neighbour_shift = {.x = 0, .y = 0};
 					int neighbour_shift_counter = 0;
 					for (int neighbour_x = -1; neighbour_x <= 1; neighbour_x++) {
 						for (int neighbour_y = -1; neighbour_y <= 1; neighbour_y++) {
 							int neighbour_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i + neighbour_x, .y=j + neighbour_y});
 							if (neighbour_coord >= 0 &&
-							    flow->array[neighbour_coord].last_update != PAINTED_BY_NEIGHBOR &&
+							    flow->array[neighbour_coord].last_update != flow->painted_by_neighbor &&
 							    (flow->array[neighbour_coord].shift.x != 0 ||
 							     flow->array[neighbour_coord].shift.y != 0)) {
 								neighbour_shift.x += flow->array[neighbour_coord].shift.x;
@@ -390,13 +397,13 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 							}
 						}
 					}
-					if (neighbour_shift_counter >= MIN_NEIGHBOURS) {
+					if (neighbour_shift_counter >= flow->min_neighbours) {
 						//printf(" <%d> ", neighbour_shift_counter);
 						coord_shift.x = neighbour_shift.x / neighbour_shift_counter;
 						coord_shift.y = neighbour_shift.y / neighbour_shift_counter;
 
 						flow->array[raw_flow_coord].shift = coord_shift;
-						flow->array[raw_flow_coord].last_update = PAINTED_BY_NEIGHBOR;
+						flow->array[raw_flow_coord].last_update = flow->painted_by_neighbor;
 					}
 				}
 			}
@@ -413,15 +420,15 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 		int j = rnd(0, vertical_blocks_num - 1);
 		int raw_flow_coord = coord_to_raw_flow(flow, (COORD_2DU) {.x=i, .y=j});
 		if (raw_flow_coord >= 0 &&
-		    flow->array[raw_flow_coord].last_update != JUST_UPDATED) {
+		    flow->array[raw_flow_coord].last_update != OPTICAL_FLOW_JUST_UPDATED) {
 			block.x = i * flow->block_size_in_pixel;
 			block.y = j * flow->block_size_in_pixel;
 
 			coord_shift = find_block_correlation (old_image, new_image, gui_image,
 							      block, flow->block_size_in_pixel,
-							      flow->array[raw_flow_coord].shift, flow->max_shift_local); // generate a lot of trivial: shift(x,y) === 0
+							      flow->array[raw_flow_coord].shift, flow->max_shift_local, flow); // generate a lot of trivial: shift(x,y) === 0
 			flow->array[raw_flow_coord].shift = coord_shift;
-			flow->array[raw_flow_coord].last_update = JUST_UPDATED;
+			flow->array[raw_flow_coord].last_update = OPTICAL_FLOW_JUST_UPDATED;
 			counter++;
 		}
 

@@ -42,9 +42,9 @@ Code:
 //#define DEBUG
 
 #define IMG_SIZE 12
-#define BLOCK_SIZE_TEST 4
-#define MAX_SHIFT_GLOBAL_TEST 2
-#define MAX_SHIFT_LOCAL_TEST 2
+#define BLOCK_SIZE_TEST 8
+#define MAX_SHIFT_GLOBAL_TEST 4
+#define MAX_SHIFT_LOCAL_TEST 8
 #define FPS_TEST 25
 
 // fixme: global variables
@@ -138,7 +138,9 @@ int main ()
 	OPTICAL_FLOW flow;
 	init_block_matching (raw_image->width, raw_image->height, BLOCK_SIZE_TEST,
 			     MAX_SHIFT_GLOBAL_TEST, MAX_SHIFT_LOCAL_TEST,
-			     NANOSECONDS_IN_SECOND / FPS_TEST, &flow);
+			     NANOSECONDS_IN_SECOND / FPS_TEST,
+			     OPTICAL_FLOW_EPSILON, OPTICAL_FLOW_HISTOGRAM_EPSILON, OPTICAL_FLOW_THRESHOLD, OPTICAL_FLOW_MIN_NEIGHBOURS, OPTICAL_FLOW_LONG_TIME_WITHOUT_UPDATE, OPTICAL_FLOW_PAINTED_BY_NEIGHBOR,
+			     &flow);
 
 
 
@@ -158,7 +160,8 @@ int main ()
 	old_image->lpData = image_a0;
 	COORD_2D best_shift = find_block_correlation (old_image, raw_image, gui_image,
 						      block, BLOCK_SIZE_TEST,
-						      (COORD_2D) {.x = 0, .y = 0}, MAX_SHIFT_LOCAL_TEST);
+						      (COORD_2D) {.x = 0, .y = 0}, MAX_SHIFT_LOCAL_TEST,
+						      &flow);
 
 	printf("\n\n.A\n");
 	print_image (old_image);

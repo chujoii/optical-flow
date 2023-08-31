@@ -10,19 +10,27 @@
 #ifndef CONST_H
 #define CONST_H
 
-#define EPSILON 1.0e-3
-#define HISTOGRAM_EPSILON 1.0e-1
-#define THRESHOLD 2
 
-#define BLOCK_SIZE 8
-#define MAX_SHIFT_GLOBAL 8    // shift_global === previoush shift
-#define MAX_SHIFT_LOCAL 2     // shift_local === distance from shift_global for search similar
-#define MIN_NEIGHBOURS 3
-#define FPS 30
-#define JUST_UPDATED 0
-#define UPDATED_IN_PREVIOUS_ITERATION 1
-#define LONG_TIME_WITHOUT_UPDATE 30
-#define PAINTED_BY_NEIGHBOR 40
+// optical flow
+#define OPTICAL_FLOW_EPSILON 1.0e-3
+#define OPTICAL_FLOW_HISTOGRAM_EPSILON 1.0e-1
+#define OPTICAL_FLOW_THRESHOLD 2
+
+#define OPTICAL_FLOW_BLOCK_SIZE 8
+#define OPTICAL_FLOW_MAX_SHIFT_GLOBAL 8    // shift_global === previoush shift
+#define OPTICAL_FLOW_MAX_SHIFT_LOCAL 4     // shift_local === distance from shift_global for search similar
+#define OPTICAL_FLOW_MIN_NEIGHBOURS 3
+#define OPTICAL_FLOW_FPS 15
+#define OPTICAL_FLOW_LONG_TIME_WITHOUT_UPDATE 30
+#define OPTICAL_FLOW_PAINTED_BY_NEIGHBOR 40
+
+
+
+
+
+#define OPTICAL_FLOW_JUST_UPDATED 0
+#define OPTICAL_FLOW_UPDATED_IN_PREVIOUS_ITERATION 1
+
 
 #define NANOSECONDS_IN_SECOND 1000000000L
 #define SECONDS_IN_DEGREE 60.0

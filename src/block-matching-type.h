@@ -20,9 +20,15 @@ typedef struct blk {
 
 typedef struct optical_flow {
 	int block_size_in_pixel;
-	int max_shift_global;
-	int max_shift_local;
+	int max_shift_global; // shift_global === previoush shift
+	int max_shift_local; // shift_local === distance from shift_global for search similar
 	long int nspf; // inverted frames per seconds == nanoseconds per frame
+	double epsilon;
+	double histogram_epsilon;
+	double threshold;
+	int min_neighbours;
+	int long_time_without_update;
+	int painted_by_neighbor;
 
 	unsigned long int width;
 	unsigned long int height;
