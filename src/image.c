@@ -47,6 +47,10 @@ Code:
 #include <stdio.h>
 #include <jpeglib.h>
 #include <jerror.h>
+#include <pthread.h>
+#include <stdatomic.h>
+#include <assert.h>
+
 
 #include "image-type.h"
 #include "image.h"
@@ -277,7 +281,45 @@ void process_image(AVFrame *pFrameRGB, int frame_count, int compare_with_first, 
 
 	if (old_image != NULL) {
 		//block_matching_full_images (old_image, raw_image, gui_image, MAX_SHIFT, BLOCK_SIZE); // optical flow
-		block_matching_optimized_images (old_image, raw_image, gui_image, flow); // optical flow
+
+
+		// start timer
+		struct timespec ts_start;
+		struct timespec ts_current;
+		clock_gettime(CLOCK_MONOTONIC, &ts_start);
+
+
+
+		pthread_t thread_optical_flow;
+		atomic_store(&(flow->semaphore_optical_flow), true);
+		flow->old_image = old_image;
+		flow->raw_image = raw_image;
+		flow->gui_image = gui_image;
+
+		int result_code = pthread_create(&thread_optical_flow, NULL, block_matching_optimized_images, flow);
+		assert(!result_code);
+
+
+
+		// wait ... and try stop parallel process
+		long int time_duration;
+		int counter = 0;
+		do {
+			clock_gettime(CLOCK_MONOTONIC, &ts_current);
+			if (ts_current.tv_sec - ts_start.tv_sec == 0) {
+				time_duration = ts_current.tv_nsec - ts_start.tv_nsec;
+			} else { // fixme: if more than one seconds, then need add seconds diff
+				time_duration = (NANOSECONDS_IN_SECOND - ts_start.tv_nsec) + ts_current.tv_nsec;
+			}
+		} while (time_duration < NANOSECONDS_IN_SECOND / OPTICAL_FLOW_FPS);
+		atomic_store(&(flow->semaphore_optical_flow), false); // try stop parallel process
+		printf("%d ", counter);
+
+
+		pthread_join(thread_optical_flow, NULL);
+		assert(!result_code);
+		printf("thread has ended.\n");
+
 	}
 
 	

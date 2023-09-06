@@ -36,6 +36,8 @@ Code:
 #include <math.h>
 #include <time.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <stdatomic.h>
 
 #include "const.h"
 #include "image.h"
@@ -66,12 +68,11 @@ COORD_2DU raw_flow_to_coord(OPTICAL_FLOW* flow, unsigned long int r)
 
 
 
-int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, long int nspf, double epsilon, double histogram_epsilon, double threshold, int min_neighbours, int long_time_without_update, int painted_by_neighbor, OPTICAL_FLOW* flow)
+int init_block_matching (int image_width, int image_height, int block_size, int max_shift_global, int max_shift_local, double epsilon, double histogram_epsilon, double threshold, int min_neighbours, int long_time_without_update, int painted_by_neighbor, OPTICAL_FLOW* flow)
 {
 	flow->block_size_in_pixel = block_size;
 	flow->max_shift_global = max_shift_global;
 	flow->max_shift_local = max_shift_local;
-	flow->nspf = nspf;
 	flow->epsilon = epsilon;
 	flow->histogram_epsilon = histogram_epsilon;
 	flow->threshold = threshold;
@@ -89,6 +90,8 @@ int init_block_matching (int image_width, int image_height, int block_size, int 
 		flow->array[i].shift.x = 0;
 		flow->array[i].shift.y = 0;
 	}
+
+	atomic_init(&flow->semaphore_optical_flow, true);
 
 	return 0;
 }
@@ -328,9 +331,10 @@ void block_matching_full_images (struct imgRawImage* old_image, struct imgRawIma
 
 
 
-void block_matching_optimized_images (struct imgRawImage* old_image, struct imgRawImage* new_image, struct imgRawImage* gui_image,
-				      OPTICAL_FLOW* flow)
+void *block_matching_optimized_images (void *vin)
 {
+	OPTICAL_FLOW* flow = vin;
+
 	int counter = 0;
 
 	int horizontal_blocks_num = flow->width;
@@ -339,9 +343,6 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 	COORD_2D coord_shift;
 	COORD_2D block;
 
-	struct timespec ts_start;
-        struct timespec ts_current;
-        clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
 
 	/*
@@ -361,7 +362,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 		if ((flow->array[raw_flow_coord].last_update == OPTICAL_FLOW_UPDATED_IN_PREVIOUS_ITERATION &&
 		     !(flow->array[raw_flow_coord].shift.x == 0 && flow->array[raw_flow_coord].shift.y == 0)) ||
 		     flow->array[raw_flow_coord].last_update > OPTICAL_FLOW_LONG_TIME_WITHOUT_UPDATE) { // update those that have not been updated for a long time
-			    coord_shift = find_block_correlation (old_image, new_image, gui_image,
+			    coord_shift = find_block_correlation (flow->old_image, flow->raw_image, flow->gui_image,
 								  block, flow->block_size_in_pixel,
 								  flow->array[raw_flow_coord].shift, flow->max_shift_local, flow);
 			    flow->array[raw_flow_coord].shift = coord_shift;
@@ -413,7 +414,6 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 	printf("%d:", counter);
 
 	// process random block
-	long int time_duration;
 	counter = 0;
 	do {
 		int i = rnd(0, horizontal_blocks_num - 1);
@@ -424,7 +424,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			block.x = i * flow->block_size_in_pixel;
 			block.y = j * flow->block_size_in_pixel;
 
-			coord_shift = find_block_correlation (old_image, new_image, gui_image,
+			coord_shift = find_block_correlation (flow->old_image, flow->raw_image, flow->gui_image,
 							      block, flow->block_size_in_pixel,
 							      flow->array[raw_flow_coord].shift, flow->max_shift_local, flow); // generate a lot of trivial: shift(x,y) === 0
 			flow->array[raw_flow_coord].shift = coord_shift;
@@ -432,13 +432,7 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 			counter++;
 		}
 
-		clock_gettime(CLOCK_MONOTONIC, &ts_current);
-		if (ts_current.tv_sec - ts_start.tv_sec == 0) {
-			time_duration = ts_current.tv_nsec - ts_start.tv_nsec;
-		} else { // fixme: if more than one seconds, then need add seconds diff
-			time_duration = (NANOSECONDS_IN_SECOND - ts_start.tv_nsec) + ts_current.tv_nsec;
-		}
-	} while (time_duration < flow->nspf);
+	} while (atomic_load(&(flow->semaphore_optical_flow)));
 	printf("%d ", counter);
 
 	/*
@@ -490,7 +484,9 @@ void block_matching_optimized_images (struct imgRawImage* old_image, struct imgR
 
 
 
-	colorize(new_image, gui_image, flow);
+	colorize(flow->raw_image, flow->gui_image, flow);
+
+	return 0;
 }
 
 

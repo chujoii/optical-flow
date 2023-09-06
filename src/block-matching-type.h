@@ -22,7 +22,6 @@ typedef struct optical_flow {
 	int block_size_in_pixel;
 	int max_shift_global; // shift_global === previoush shift
 	int max_shift_local; // shift_local === distance from shift_global for search similar
-	long int nspf; // inverted frames per seconds == nanoseconds per frame
 	double epsilon;
 	double histogram_epsilon;
 	double threshold;
@@ -34,6 +33,12 @@ typedef struct optical_flow {
 	unsigned long int height;
 	unsigned long int array_size;
 	BLK* array;
+
+	struct imgRawImage* raw_image;
+	struct imgRawImage* gui_image;
+	struct imgRawImage* old_image;
+
+	_Atomic int semaphore_optical_flow;
 } OPTICAL_FLOW;
 
 typedef struct histogram_storage {

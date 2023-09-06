@@ -69,6 +69,8 @@ Code:
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pthread.h>
+#include <stdatomic.h>
 
 #include "capture.h"
 #include "gui.h"
@@ -284,7 +286,6 @@ int mainloop(char *file_name, int max_frame_count, int compare_with_first, unsig
 	OPTICAL_FLOW flow;
 	init_block_matching (pFrameRGB->width, pFrameRGB->height,
 			     OPTICAL_FLOW_BLOCK_SIZE, OPTICAL_FLOW_MAX_SHIFT_GLOBAL, OPTICAL_FLOW_MAX_SHIFT_LOCAL,
-			     NANOSECONDS_IN_SECOND / OPTICAL_FLOW_FPS,
 			     OPTICAL_FLOW_EPSILON, OPTICAL_FLOW_HISTOGRAM_EPSILON,
 			     OPTICAL_FLOW_THRESHOLD,
 			     OPTICAL_FLOW_MIN_NEIGHBOURS,
